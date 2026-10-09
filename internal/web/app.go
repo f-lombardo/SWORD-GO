@@ -95,6 +95,7 @@ func NewApp() (*App, error) {
 			cmpOr(os.Getenv("SWORD_GO_ADMIN_EMAIL"), "admin@example.com"),
 			cmpOr(os.Getenv("SWORD_GO_ADMIN_PASSWORD"), "password"),
 			cmpOr(os.Getenv("SWORD_GO_SESSION_SECRET"), "change-me-in-env"),
+			parseBoolOrDefault(os.Getenv("SWORD_GO_SECURE_COOKIES"), false),
 		),
 	}
 
@@ -104,6 +105,9 @@ func NewApp() (*App, error) {
 		Addr:              address,
 		Handler:           app.routes(),
 		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       20 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	return app, nil
@@ -140,7 +144,12 @@ func (a *App) startBackupDispatcher(ctx context.Context) {
 	}
 }
 
-func (a *App) renderTemplate(w http.ResponseWriter, name string, data any) {
+func (a *App) renderTemplate(w http.ResponseWriter, r *http.Request, name string, data any) {
+	if asMap, ok := data.(map[string]any); ok {
+		if _, exists := asMap["CSRFToken"]; !exists {
+			asMap["CSRFToken"] = a.auth.ensureCSRFCookie(w, r)
+		}
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := a.templates.ExecuteTemplate(w, name, data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -162,4 +171,15 @@ func cmpOr(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func parseBoolOrDefault(value string, fallback bool) bool {
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }

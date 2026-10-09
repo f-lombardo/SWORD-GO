@@ -25,6 +25,7 @@
     <section>
         <h2>Add integration</h2>
         <form method="post" action="/settings/integrations">
+            <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
             <label>Name <input name="name" required></label><br>
             <label>Provider
                 <select name="provider" required>
@@ -73,12 +74,14 @@
                 <td>{{ .Credentials.Key }}</td>
                 <td>
                     <form method="post" action="/settings/integrations/{{ .ID }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
                         <input type="hidden" name="_method" value="PATCH">
                         <input type="hidden" name="name" value="{{ .Name }}">
                         <input type="hidden" name="type" value="{{ .Credentials.Type }}">
                         <button type="submit">Keep/refresh</button>
                     </form>
                     <form method="post" action="/settings/integrations/{{ .ID }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
                         <input type="hidden" name="_method" value="DELETE">
                         <button type="submit">Delete</button>
                     </form>
@@ -93,4 +96,3 @@
 </main>
 </body>
 </html>
-

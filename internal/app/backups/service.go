@@ -15,16 +15,18 @@ import (
 )
 
 type Service struct {
-	store       *Store
-	serverStore *servers.Store
-	siteStore   *sites.Store
+	store        *Store
+	serverStore  *servers.Store
+	siteStore    *sites.Store
+	siteExecutor SiteBackupExecutor
 }
 
 func NewService(store *Store, serverStore *servers.Store, siteStore *sites.Store) *Service {
 	return &Service{
-		store:       store,
-		serverStore: serverStore,
-		siteStore:   siteStore,
+		store:        store,
+		serverStore:  serverStore,
+		siteStore:    siteStore,
+		siteExecutor: borgExecutor{},
 	}
 }
 
@@ -235,6 +237,10 @@ func (s *Service) executeSchedule(schedule Schedule) {
 	if err != nil {
 		return
 	}
+	server, err := s.serverStore.GetByID(ctx, schedule.ServerID)
+	if err != nil {
+		return
+	}
 
 	installedSites, err := s.siteStore.ListInstalledByServer(ctx, schedule.ServerID)
 	if err != nil {
@@ -256,20 +262,32 @@ func (s *Service) executeSchedule(schedule Schedule) {
 			continue
 		}
 
-		archiveName := fmt.Sprintf("%s-%s", site.Domain, startedAt.Format("2006-01-02T15-04-05"))
+		executionResult, executionErr := s.siteExecutor.ExecuteSiteBackup(ctx, schedule, destination, server, site)
+
 		duration := int64(time.Since(startedAt).Seconds())
 		if duration < 1 {
 			duration = 1
 		}
-		archiveSize := int64(64 * 1024)
-
-		run.Status = "completed"
-		run.Output = fmt.Sprintf("backup destination=%s site=%s schedule=%d", destination.Name, site.Domain, schedule.ID)
-		run.ArchiveName = archiveName
-		run.SizeBytes = &archiveSize
 		run.DurationSeconds = &duration
 		completedAt := time.Now().UTC()
 		run.CompletedAt = &completedAt
+
+		if executionErr != nil {
+			run.Status = "failed"
+			run.Output = executionResult.Output
+			if run.Output == "" {
+				run.Output = executionErr.Error()
+			} else {
+				run.Output += "\n[error]\n" + executionErr.Error()
+			}
+			_ = s.store.UpdateRun(ctx, run)
+			continue
+		}
+
+		run.Status = "completed"
+		run.Output = executionResult.Output
+		run.ArchiveName = executionResult.ArchiveName
+		run.SizeBytes = executionResult.SizeBytes
 		_ = s.store.UpdateRun(ctx, run)
 	}
 }

@@ -13,11 +13,13 @@
     <p>Zone ID: {{ .ZoneID }}</p>
 
     <form method="post" action="/cloudflare/{{ .Integration.ID }}/{{ .ZoneID }}/purge-cache">
+        <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
         <button type="submit">Purge cache</button>
     </form>
 
     <h2>DNS record upsert</h2>
     <form method="post" action="/cloudflare/{{ .Integration.ID }}/{{ .ZoneID }}/dns-records">
+        <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
         <label>Name <input name="name" required placeholder="example.com"></label><br>
         <label>Type
             <select name="type" required>
@@ -57,6 +59,7 @@
             <td>{{ index . "proxied" }}</td>
             <td>
                 <form method="post" action="/cloudflare/{{ $.Integration.ID }}/{{ $.ZoneID }}/dns-records/{{ index . "id" }}" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
                     <input type="hidden" name="_method" value="PATCH">
                     <input type="hidden" name="type" value="{{ index . "type" }}">
                     <input type="hidden" name="name" value="{{ index . "name" }}">
@@ -65,6 +68,7 @@
                     <button type="submit">Refresh</button>
                 </form>
                 <form method="post" action="/cloudflare/{{ $.Integration.ID }}/{{ $.ZoneID }}/dns-records/{{ index . "id" }}" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
                     <input type="hidden" name="_method" value="DELETE">
                     <button type="submit">Delete</button>
                 </form>
@@ -84,4 +88,3 @@
 </main>
 </body>
 </html>
-

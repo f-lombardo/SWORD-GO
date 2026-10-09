@@ -18,6 +18,7 @@
             <a href="/cloudflare">Cloudflare</a>
         </p>
         <form method="post" action="/logout">
+            <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
             <button type="submit">Logout</button>
         </form>
     </header>
@@ -29,6 +30,7 @@
     <section>
         <h2>Create server</h2>
         <form method="post" action="/servers">
+            <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
             <label>Name <input name="name" required></label><br>
             <label>Hostname <input name="hostname" required></label><br>
             <label>Timezone <input name="timezone" value="UTC" required></label><br>

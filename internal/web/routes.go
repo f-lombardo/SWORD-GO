@@ -19,28 +19,35 @@ import (
 func (a *App) routes() http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/login", a.loginHandler)
-	mux.HandleFunc("/logout", a.logoutHandler)
+	mux.Handle("/login", a.requireCSRF(http.HandlerFunc(a.loginHandler)))
+	mux.Handle("/logout", a.requireAuth(a.requireCSRF(http.HandlerFunc(a.logoutHandler))))
 
-	mux.Handle("/servers", a.requireAuth(http.HandlerFunc(a.serversIndexCreateHandler)))
-	mux.Handle("/servers/", a.requireAuth(http.HandlerFunc(a.serversDetailHandler)))
-	mux.Handle("/servers/generate-name", a.requireAuth(http.HandlerFunc(a.generateNameHandler)))
-	mux.Handle("/sites", a.requireAuth(http.HandlerFunc(a.sitesIndexCreateHandler)))
-	mux.Handle("/sites/", a.requireAuth(http.HandlerFunc(a.sitesDetailHandler)))
-	mux.Handle("/backup-destinations", a.requireAuth(http.HandlerFunc(a.backupDestinationsIndexCreateHandler)))
-	mux.Handle("/backup-destinations/", a.requireAuth(http.HandlerFunc(a.backupDestinationsDetailHandler)))
-	mux.Handle("/backup-schedules", a.requireAuth(http.HandlerFunc(a.backupSchedulesIndexHandler)))
-	mux.Handle("/settings/integrations", a.requireAuth(http.HandlerFunc(a.integrationsIndexCreateHandler)))
-	mux.Handle("/settings/integrations/", a.requireAuth(http.HandlerFunc(a.integrationsDetailHandler)))
-	mux.Handle("/cloudflare", a.requireAuth(http.HandlerFunc(a.cloudflareIndexHandler)))
-	mux.Handle("/cloudflare/", a.requireAuth(http.HandlerFunc(a.cloudflareDetailHandler)))
+	mux.Handle("/public/servers/", http.HandlerFunc(a.publicServersHandler))
+	mux.Handle("/public/sites/", http.HandlerFunc(a.publicSitesHandler))
+
+	protected := func(handler http.HandlerFunc) http.Handler {
+		return a.requireAuth(a.requireCSRF(handler))
+	}
+
+	mux.Handle("/servers", protected(a.serversIndexCreateHandler))
+	mux.Handle("/servers/", protected(a.serversDetailHandler))
+	mux.Handle("/servers/generate-name", protected(a.generateNameHandler))
+	mux.Handle("/sites", protected(a.sitesIndexCreateHandler))
+	mux.Handle("/sites/", protected(a.sitesDetailHandler))
+	mux.Handle("/backup-destinations", protected(a.backupDestinationsIndexCreateHandler))
+	mux.Handle("/backup-destinations/", protected(a.backupDestinationsDetailHandler))
+	mux.Handle("/backup-schedules", protected(a.backupSchedulesIndexHandler))
+	mux.Handle("/settings/integrations", protected(a.integrationsIndexCreateHandler))
+	mux.Handle("/settings/integrations/", protected(a.integrationsDetailHandler))
+	mux.Handle("/cloudflare", protected(a.cloudflareIndexHandler))
+	mux.Handle("/cloudflare/", protected(a.cloudflareDetailHandler))
 
 	return mux
 }
 
 func (a *App) loginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		a.renderTemplate(w, "login.html", map[string]any{"Error": ""})
+		a.renderTemplate(w, r, "login.html", map[string]any{"Error": ""})
 		return
 	}
 
@@ -57,7 +64,7 @@ func (a *App) loginHandler(w http.ResponseWriter, r *http.Request) {
 	email := r.Form.Get("email")
 	password := r.Form.Get("password")
 	if !a.auth.authenticate(email, password) {
-		a.renderTemplate(w, "login.html", map[string]any{"Error": "Invalid credentials."})
+		a.renderTemplate(w, r, "login.html", map[string]any{"Error": "Invalid credentials."})
 		return
 	}
 
@@ -84,7 +91,7 @@ func (a *App) serversIndexCreateHandler(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		a.renderTemplate(w, "servers_index.html", map[string]any{
+		a.renderTemplate(w, r, "servers_index.html", map[string]any{
 			"Servers": serversList,
 		})
 	case http.MethodPost:
@@ -118,7 +125,7 @@ func (a *App) serversIndexCreateHandler(w http.ResponseWriter, r *http.Request) 
 				http.Error(w, listErr.Error(), http.StatusInternalServerError)
 				return
 			}
-			a.renderTemplate(w, "servers_index.html", map[string]any{
+			a.renderTemplate(w, r, "servers_index.html", map[string]any{
 				"Servers": serversList,
 				"Error":   err.Error(),
 			})
@@ -157,8 +164,8 @@ func (a *App) serversDetailHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		scriptURL := "/servers/" + parts[0] + "/scripts/provision?token=" + server.ProvisionToken
-		callbackURL := "/servers/" + parts[0] + "/callbacks/provision?signature=" + server.CallbackSignature
+		scriptURL := "/public/servers/" + parts[0] + "/scripts/provision?token=" + server.ProvisionToken
+		callbackURL := "/public/servers/" + parts[0] + "/callbacks/provision?signature=" + server.CallbackSignature
 		wgetCommand := `wget -qO sword-provision.sh "` + scriptURL + `" && sudo bash sword-provision.sh 2>&1 | tee sword-provision.log`
 		backupSchedules, schedulesErr := a.backupsService.ListSchedulesByServer(r.Context(), server.ID)
 		if schedulesErr != nil {
@@ -176,7 +183,7 @@ func (a *App) serversDetailHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		a.renderTemplate(w, "servers_show.html", map[string]any{
+		a.renderTemplate(w, r, "servers_show.html", map[string]any{
 			"Server":             server,
 			"ScriptURL":          scriptURL,
 			"CallbackURL":        callbackURL,
@@ -185,58 +192,6 @@ func (a *App) serversDetailHandler(w http.ResponseWriter, r *http.Request) {
 			"BackupRuns":         backupRuns,
 			"BackupDestinations": backupDestinations,
 		})
-		return
-	}
-
-	if len(parts) == 3 && parts[1] == "scripts" && parts[2] == "provision" && r.Method == http.MethodGet {
-		token := r.URL.Query().Get("token")
-		server, getErr := a.serversService.GetServerByProvisionToken(r.Context(), serverID, token)
-		if getErr != nil {
-			if errors.Is(getErr, servers.ErrNotFound) {
-				http.Error(w, "forbidden", http.StatusForbidden)
-				return
-			}
-			http.Error(w, getErr.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		callbackURL := "/servers/" + parts[0] + "/callbacks/provision?signature=" + server.CallbackSignature
-		script, renderErr := servers.RenderProvisionScript(servers.ProvisionScriptInput{
-			Server:      server,
-			CallbackURL: callbackURL,
-		})
-		if renderErr != nil {
-			http.Error(w, renderErr.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/x-shellscript")
-		_, _ = w.Write([]byte(script))
-		return
-	}
-
-	if len(parts) == 3 && parts[1] == "callbacks" && parts[2] == "provision" && r.Method == http.MethodPost {
-		signature := r.URL.Query().Get("signature")
-		if err = r.ParseForm(); err != nil {
-			http.Error(w, "invalid form", http.StatusBadRequest)
-			return
-		}
-
-		status := r.Form.Get("status")
-		step := r.Form.Get("step")
-
-		updateErr := a.serversService.MarkProvisionProgress(r.Context(), serverID, signature, status, step)
-		if updateErr != nil {
-			if errors.Is(updateErr, servers.ErrNotFound) {
-				http.Error(w, "forbidden", http.StatusForbidden)
-				return
-			}
-			http.Error(w, updateErr.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]bool{"ok": true})
 		return
 	}
 
@@ -350,7 +305,7 @@ func (a *App) sitesIndexCreateHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		a.renderTemplate(w, "sites_index.html", map[string]any{
+		a.renderTemplate(w, r, "sites_index.html", map[string]any{
 			"Sites":   sitesList,
 			"Servers": provisionedServers,
 		})
@@ -386,7 +341,7 @@ func (a *App) sitesIndexCreateHandler(w http.ResponseWriter, r *http.Request) {
 					provisionedServers = append(provisionedServers, server)
 				}
 			}
-			a.renderTemplate(w, "sites_index.html", map[string]any{
+			a.renderTemplate(w, r, "sites_index.html", map[string]any{
 				"Sites":   sitesList,
 				"Servers": provisionedServers,
 				"Error":   err.Error(),
@@ -432,11 +387,11 @@ func (a *App) sitesDetailHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		installScriptURL := "/sites/" + parts[0] + "/scripts/install?token=" + site.InstallToken
-		deleteScriptURL := "/sites/" + parts[0] + "/scripts/delete?token=" + site.InstallToken
-		callbackURL := "/sites/" + parts[0] + "/callbacks/install?signature=" + site.CallbackSignature
+		installScriptURL := "/public/sites/" + parts[0] + "/scripts/install?token=" + site.InstallToken
+		deleteScriptURL := "/public/sites/" + parts[0] + "/scripts/delete?token=" + site.InstallToken
+		callbackURL := "/public/sites/" + parts[0] + "/callbacks/install?signature=" + site.CallbackSignature
 
-		a.renderTemplate(w, "sites_show.html", map[string]any{
+		a.renderTemplate(w, r, "sites_show.html", map[string]any{
 			"Site":             site,
 			"Server":           server,
 			"InstallScriptURL": installScriptURL,
@@ -478,104 +433,6 @@ func (a *App) sitesDetailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(parts) == 3 && parts[1] == "scripts" && parts[2] == "install" && r.Method == http.MethodGet {
-		token := r.URL.Query().Get("token")
-		site, getErr := a.sitesService.GetSiteByInstallToken(r.Context(), siteID, token)
-		if getErr != nil {
-			if errors.Is(getErr, sites.ErrNotFound) {
-				http.Error(w, "forbidden", http.StatusForbidden)
-				return
-			}
-			http.Error(w, getErr.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		server, getErr := a.serversService.GetServer(r.Context(), site.ServerID)
-		if getErr != nil {
-			http.Error(w, getErr.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		callbackURL := "/sites/" + parts[0] + "/callbacks/install?signature=" + site.CallbackSignature
-		script, renderErr := sites.RenderInstallScript(sites.InstallScriptInput{
-			Site:             site,
-			Server:           server,
-			CallbackURL:      callbackURL,
-			AdminUser:        cmpOr(r.URL.Query().Get("wp_admin_user"), "sword_admin"),
-			AdminPassword:    cmpOr(r.URL.Query().Get("wp_admin_password"), randomLowerAlphaNumeric(20)),
-			AdminEmail:       cmpOr(r.URL.Query().Get("wp_admin_email"), "admin@example.com"),
-			AdminDisplayName: cmpOr(r.URL.Query().Get("wp_admin_display_name"), "SWORD Admin"),
-		})
-		if renderErr != nil {
-			http.Error(w, renderErr.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/x-shellscript")
-		_, _ = w.Write([]byte(script))
-		return
-	}
-
-	if len(parts) == 3 && parts[1] == "scripts" && parts[2] == "delete" && r.Method == http.MethodGet {
-		token := r.URL.Query().Get("token")
-		site, getErr := a.sitesService.GetSiteByInstallToken(r.Context(), siteID, token)
-		if getErr != nil {
-			if errors.Is(getErr, sites.ErrNotFound) {
-				http.Error(w, "forbidden", http.StatusForbidden)
-				return
-			}
-			http.Error(w, getErr.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		server, getErr := a.serversService.GetServer(r.Context(), site.ServerID)
-		if getErr != nil {
-			http.Error(w, getErr.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		script, renderErr := sites.RenderDeleteScript(sites.DeleteScriptInput{
-			Site:   site,
-			Server: server,
-		})
-		if renderErr != nil {
-			http.Error(w, renderErr.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/x-shellscript")
-		_, _ = w.Write([]byte(script))
-		return
-	}
-
-	if len(parts) == 3 && parts[1] == "callbacks" && parts[2] == "install" && r.Method == http.MethodPost {
-		signature := r.URL.Query().Get("signature")
-		if err = r.ParseForm(); err != nil {
-			http.Error(w, "invalid form", http.StatusBadRequest)
-			return
-		}
-
-		updateErr := a.sitesService.MarkInstallProgress(
-			r.Context(),
-			siteID,
-			signature,
-			r.Form.Get("status"),
-			r.Form.Get("step"),
-		)
-		if updateErr != nil {
-			if errors.Is(updateErr, sites.ErrNotFound) {
-				http.Error(w, "forbidden", http.StatusForbidden)
-				return
-			}
-			http.Error(w, updateErr.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]bool{"ok": true})
-		return
-	}
-
 	http.NotFound(w, r)
 }
 
@@ -587,7 +444,7 @@ func (a *App) backupDestinationsIndexCreateHandler(w http.ResponseWriter, r *htt
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		a.renderTemplate(w, "backup_destinations_index.html", map[string]any{
+		a.renderTemplate(w, r, "backup_destinations_index.html", map[string]any{
 			"Destinations": destinations,
 		})
 	case http.MethodPost:
@@ -614,7 +471,7 @@ func (a *App) backupDestinationsIndexCreateHandler(w http.ResponseWriter, r *htt
 		})
 		if err != nil {
 			destinations, _ := a.backupsService.ListDestinations(r.Context())
-			a.renderTemplate(w, "backup_destinations_index.html", map[string]any{
+			a.renderTemplate(w, r, "backup_destinations_index.html", map[string]any{
 				"Destinations": destinations,
 				"Error":        err.Error(),
 			})
@@ -650,7 +507,7 @@ func (a *App) backupDestinationsDetailHandler(w http.ResponseWriter, r *http.Req
 			return
 		}
 		schedules, _ := a.backupsService.ListSchedules(r.Context())
-		a.renderTemplate(w, "backup_destinations_show.html", map[string]any{
+		a.renderTemplate(w, r, "backup_destinations_show.html", map[string]any{
 			"Destination": destination,
 			"Schedules":   schedules,
 		})
@@ -715,7 +572,7 @@ func (a *App) backupSchedulesIndexHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	a.renderTemplate(w, "backup_schedules_index.html", map[string]any{
+	a.renderTemplate(w, r, "backup_schedules_index.html", map[string]any{
 		"Schedules": schedules,
 	})
 }
@@ -747,7 +604,7 @@ func (a *App) integrationsIndexCreateHandler(w http.ResponseWriter, r *http.Requ
 			masked = append(masked, integration)
 		}
 
-		a.renderTemplate(w, "integrations_index.html", map[string]any{
+		a.renderTemplate(w, r, "integrations_index.html", map[string]any{
 			"Integrations": masked,
 		})
 	case http.MethodPost:
@@ -768,7 +625,7 @@ func (a *App) integrationsIndexCreateHandler(w http.ResponseWriter, r *http.Requ
 		})
 		if err != nil {
 			integrationsList, _ := a.integrationsService.List(r.Context())
-			a.renderTemplate(w, "integrations_index.html", map[string]any{
+			a.renderTemplate(w, r, "integrations_index.html", map[string]any{
 				"Integrations": integrationsList,
 				"Error":        err.Error(),
 			})
@@ -844,7 +701,7 @@ func (a *App) cloudflareIndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.renderTemplate(w, "cloudflare_index.html", map[string]any{
+	a.renderTemplate(w, r, "cloudflare_index.html", map[string]any{
 		"Integrations": integrationsList,
 	})
 }
@@ -882,7 +739,7 @@ func (a *App) cloudflareDetailHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		a.renderTemplate(w, "cloudflare_zones.html", map[string]any{
+		a.renderTemplate(w, r, "cloudflare_zones.html", map[string]any{
 			"Integration": integration,
 			"Zones":       zones,
 		})
@@ -913,7 +770,7 @@ func (a *App) cloudflareDetailHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		a.renderTemplate(w, "cloudflare_show.html", map[string]any{
+		a.renderTemplate(w, r, "cloudflare_show.html", map[string]any{
 			"Integration": integration,
 			"ZoneID":      zoneID,
 			"ZoneName":    zone["name"],
@@ -1031,4 +888,181 @@ func (a *App) generateNameHandler(w http.ResponseWriter, r *http.Request) {
 		"name":     name,
 		"hostname": hostname,
 	})
+}
+
+func (a *App) publicServersHandler(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/public/servers/")
+	path = strings.Trim(path, "/")
+	parts := strings.Split(path, "/")
+	if len(parts) < 3 {
+		http.NotFound(w, r)
+		return
+	}
+
+	serverID, err := parsePositiveID(parts[0])
+	if err != nil {
+		http.Error(w, "invalid server id", http.StatusBadRequest)
+		return
+	}
+
+	if parts[1] == "scripts" && parts[2] == "provision" && r.Method == http.MethodGet {
+		token := r.URL.Query().Get("token")
+		server, getErr := a.serversService.GetServerByProvisionToken(r.Context(), serverID, token)
+		if getErr != nil {
+			if errors.Is(getErr, servers.ErrNotFound) {
+				http.Error(w, "forbidden", http.StatusForbidden)
+				return
+			}
+			http.Error(w, getErr.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		callbackURL := "/public/servers/" + parts[0] + "/callbacks/provision?signature=" + server.CallbackSignature
+		script, renderErr := servers.RenderProvisionScript(servers.ProvisionScriptInput{
+			Server:      server,
+			CallbackURL: callbackURL,
+		})
+		if renderErr != nil {
+			http.Error(w, renderErr.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/x-shellscript")
+		_, _ = w.Write([]byte(script))
+		return
+	}
+
+	if parts[1] == "callbacks" && parts[2] == "provision" && r.Method == http.MethodPost {
+		signature := r.URL.Query().Get("signature")
+		if err = r.ParseForm(); err != nil {
+			http.Error(w, "invalid form", http.StatusBadRequest)
+			return
+		}
+
+		updateErr := a.serversService.MarkProvisionProgress(r.Context(), serverID, signature, r.Form.Get("status"), r.Form.Get("step"))
+		if updateErr != nil {
+			if errors.Is(updateErr, servers.ErrNotFound) {
+				http.Error(w, "forbidden", http.StatusForbidden)
+				return
+			}
+			http.Error(w, updateErr.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]bool{"ok": true})
+		return
+	}
+
+	http.NotFound(w, r)
+}
+
+func (a *App) publicSitesHandler(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/public/sites/")
+	path = strings.Trim(path, "/")
+	parts := strings.Split(path, "/")
+	if len(parts) < 3 {
+		http.NotFound(w, r)
+		return
+	}
+
+	siteID, err := parsePositiveID(parts[0])
+	if err != nil {
+		http.Error(w, "invalid site id", http.StatusBadRequest)
+		return
+	}
+
+	if parts[1] == "scripts" && parts[2] == "install" && r.Method == http.MethodGet {
+		token := r.URL.Query().Get("token")
+		site, getErr := a.sitesService.GetSiteByInstallToken(r.Context(), siteID, token)
+		if getErr != nil {
+			if errors.Is(getErr, sites.ErrNotFound) {
+				http.Error(w, "forbidden", http.StatusForbidden)
+				return
+			}
+			http.Error(w, getErr.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		server, getErr := a.serversService.GetServer(r.Context(), site.ServerID)
+		if getErr != nil {
+			http.Error(w, getErr.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		callbackURL := "/public/sites/" + parts[0] + "/callbacks/install?signature=" + site.CallbackSignature
+		script, renderErr := sites.RenderInstallScript(sites.InstallScriptInput{
+			Site:             site,
+			Server:           server,
+			CallbackURL:      callbackURL,
+			AdminUser:        cmpOr(r.URL.Query().Get("wp_admin_user"), "sword_admin"),
+			AdminPassword:    cmpOr(r.URL.Query().Get("wp_admin_password"), randomLowerAlphaNumeric(20)),
+			AdminEmail:       cmpOr(r.URL.Query().Get("wp_admin_email"), "admin@example.com"),
+			AdminDisplayName: cmpOr(r.URL.Query().Get("wp_admin_display_name"), "SWORD Admin"),
+		})
+		if renderErr != nil {
+			http.Error(w, renderErr.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/x-shellscript")
+		_, _ = w.Write([]byte(script))
+		return
+	}
+
+	if parts[1] == "scripts" && parts[2] == "delete" && r.Method == http.MethodGet {
+		token := r.URL.Query().Get("token")
+		site, getErr := a.sitesService.GetSiteByInstallToken(r.Context(), siteID, token)
+		if getErr != nil {
+			if errors.Is(getErr, sites.ErrNotFound) {
+				http.Error(w, "forbidden", http.StatusForbidden)
+				return
+			}
+			http.Error(w, getErr.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		server, getErr := a.serversService.GetServer(r.Context(), site.ServerID)
+		if getErr != nil {
+			http.Error(w, getErr.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		script, renderErr := sites.RenderDeleteScript(sites.DeleteScriptInput{
+			Site:   site,
+			Server: server,
+		})
+		if renderErr != nil {
+			http.Error(w, renderErr.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/x-shellscript")
+		_, _ = w.Write([]byte(script))
+		return
+	}
+
+	if parts[1] == "callbacks" && parts[2] == "install" && r.Method == http.MethodPost {
+		signature := r.URL.Query().Get("signature")
+		if err = r.ParseForm(); err != nil {
+			http.Error(w, "invalid form", http.StatusBadRequest)
+			return
+		}
+
+		updateErr := a.sitesService.MarkInstallProgress(r.Context(), siteID, signature, r.Form.Get("status"), r.Form.Get("step"))
+		if updateErr != nil {
+			if errors.Is(updateErr, sites.ErrNotFound) {
+				http.Error(w, "forbidden", http.StatusForbidden)
+				return
+			}
+			http.Error(w, updateErr.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]bool{"ok": true})
+		return
+	}
+
+	http.NotFound(w, r)
 }

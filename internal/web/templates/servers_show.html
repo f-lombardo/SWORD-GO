@@ -37,6 +37,7 @@
 
     <h2>Backup schedules</h2>
     <form method="post" action="/servers/{{ .Server.ID }}/backup-schedules">
+        <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
         <label>Destination
             <select name="backup_destination_id" required>
                 <option value="">Select destination</option>
@@ -80,9 +81,11 @@
             <td>{{ .RetentionCount }}</td>
             <td>
                 <form method="post" action="/servers/{{ $.Server.ID }}/backup-schedules/{{ .ID }}/run" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
                     <button type="submit">Run now</button>
                 </form>
                 <form method="post" action="/servers/{{ $.Server.ID }}/backup-schedules/{{ .ID }}" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
                     <input type="hidden" name="_method" value="DELETE">
                     <button type="submit">Delete</button>
                 </form>

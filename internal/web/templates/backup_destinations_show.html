@@ -22,6 +22,7 @@
 
     <h2>Update destination</h2>
     <form method="post" action="/backup-destinations/{{ .Destination.ID }}">
+        <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
         <input type="hidden" name="_method" value="PATCH">
         <label>Name <input name="name" value="{{ .Destination.Name }}" required></label><br>
         <label>Type <input name="type" value="{{ .Destination.Type }}" required></label><br>
@@ -42,6 +43,7 @@
 
     <h2>Delete destination</h2>
     <form method="post" action="/backup-destinations/{{ .Destination.ID }}">
+        <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
         <input type="hidden" name="_method" value="DELETE">
         <button type="submit">Delete</button>
     </form>
@@ -59,4 +61,3 @@
 </main>
 </body>
 </html>
-

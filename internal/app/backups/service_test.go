@@ -3,6 +3,7 @@ package backups
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"testing"
 	"time"
 
@@ -36,7 +37,19 @@ func newTestBackupService(t *testing.T) (*Service, *Store, *servers.Store, *site
 	}
 
 	service := NewService(backupStore, serverStore, siteStore)
+	service.siteExecutor = fakeSiteBackupExecutor{}
 	return service, backupStore, serverStore, siteStore
+}
+
+type fakeSiteBackupExecutor struct{}
+
+func (f fakeSiteBackupExecutor) ExecuteSiteBackup(ctx context.Context, schedule Schedule, destination Destination, server servers.Server, site sites.Site) (ExecutionResult, error) {
+	size := int64(1024)
+	return ExecutionResult{
+		Output:      fmt.Sprintf("backup destination=%s site=%s schedule=%d", destination.Name, site.Domain, schedule.ID),
+		ArchiveName: site.Domain + "-fake-archive",
+		SizeBytes:   &size,
+	}, nil
 }
 
 func createProvisionedServerForBackups(t *testing.T, store *servers.Store) servers.Server {

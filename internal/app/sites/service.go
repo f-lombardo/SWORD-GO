@@ -241,7 +241,7 @@ func (s *Service) triggerInstall(siteID int64, installRequest InstallRequest) {
 	})
 	_ = s.store.Update(ctx, site)
 
-	installURL := fmt.Sprintf("%s/sites/%d/scripts/install?token=%s&wp_admin_user=%s&wp_admin_password=%s&wp_admin_email=%s&wp_admin_display_name=%s",
+	installURL := fmt.Sprintf("%s/public/sites/%d/scripts/install?token=%s&wp_admin_user=%s&wp_admin_password=%s&wp_admin_email=%s&wp_admin_display_name=%s",
 		s.baseURL,
 		site.ID,
 		url.QueryEscape(site.InstallToken),
@@ -268,7 +268,7 @@ func (s *Service) TriggerDeleteRemote(ctx context.Context, site Site) error {
 		return err
 	}
 
-	deleteURL := fmt.Sprintf("%s/sites/%d/scripts/delete?token=%s", s.baseURL, site.ID, url.QueryEscape(site.InstallToken))
+	deleteURL := fmt.Sprintf("%s/public/sites/%d/scripts/delete?token=%s", s.baseURL, site.ID, url.QueryEscape(site.InstallToken))
 	return executeRemoteScript(server, fmt.Sprintf(`wget -qO delete-wp-site.sh "%s" && bash delete-wp-site.sh > delete-wp-site.log 2>&1`, deleteURL))
 }
 

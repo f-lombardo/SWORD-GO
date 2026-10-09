@@ -24,6 +24,7 @@
     <section>
         <h2>Create site</h2>
         <form method="post" action="/sites">
+            <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
             <label>Server
                 <select name="server_id" required>
                     <option value="">Select server</option>

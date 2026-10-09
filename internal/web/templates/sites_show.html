@@ -35,10 +35,10 @@
 
     <h2>Delete site</h2>
     <form method="post" action="/sites/{{ .Site.ID }}">
+        <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
         <input type="hidden" name="_method" value="DELETE">
         <button type="submit">Delete site</button>
     </form>
 </main>
 </body>
 </html>
-
