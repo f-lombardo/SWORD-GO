@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SWORD-GO Server {{ .Server.ID }}</title>
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+</head>
+<body>
+<main>
+    <p><a href="/servers">← Back to servers</a></p>
+    <h1>{{ .Server.Name }}</h1>
+
+    <dl>
+        <dt>ID</dt><dd>{{ .Server.ID }}</dd>
+        <dt>Hostname</dt><dd>{{ .Server.Hostname }}</dd>
+        <dt>IP Address</dt><dd>{{ .Server.IPAddress }}</dd>
+        <dt>Provider</dt><dd>{{ .Server.Provider }}</dd>
+        <dt>Region</dt><dd>{{ .Server.Region }}</dd>
+        <dt>Status</dt><dd>{{ .Server.Status }}</dd>
+        <dt>Current Step</dt><dd>{{ .Server.CurrentStep }}</dd>
+    </dl>
+
+    <h2>Provision script</h2>
+    <p><a href="{{ .ScriptURL }}" target="_blank">{{ .ScriptURL }}</a></p>
+    <pre>{{ .WgetCommand }}</pre>
+
+    <h2>Provision log</h2>
+    <ul>
+        {{ range .Server.ProvisionLog }}
+        <li>{{ .Timestamp }} — {{ .Step }}</li>
+        {{ else }}
+        <li>No log entries yet.</li>
+        {{ end }}
+    </ul>
+</main>
+</body>
+</html>
+

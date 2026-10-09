@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SWORD-GO Servers</title>
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+</head>
+<body>
+<main>
+    <header>
+        <h1>Servers</h1>
+        <form method="post" action="/logout">
+            <button type="submit">Logout</button>
+        </form>
+    </header>
+
+    {{ if .Error }}
+    <p style="color:red;">{{ .Error }}</p>
+    {{ end }}
+
+    <section>
+        <h2>Create server</h2>
+        <form method="post" action="/servers">
+            <label>Name <input name="name" required></label><br>
+            <label>Hostname <input name="hostname" required></label><br>
+            <label>Timezone <input name="timezone" value="UTC" required></label><br>
+            <label>SSH Port <input name="ssh_port" type="number" min="1" max="65535" value="22" required></label><br>
+            <label>Provider
+                <select name="provider">
+                    <option value="">custom</option>
+                    <option value="digital_ocean">digital_ocean</option>
+                    <option value="hetzner">hetzner</option>
+                </select>
+            </label><br>
+            <label>Server type <input name="server_type" placeholder="s-1vcpu-1gb or cx23"></label><br>
+            <label>Region/location <input name="region" placeholder="nyc1 or nbg1"></label><br>
+            <label>Image <input name="image"></label><br>
+            <label>IP Address (custom servers) <input name="ip_address"></label><br>
+            <label>Provider API token (not persisted) <input name="api_token" type="password"></label><br>
+            <button type="submit">Create</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Server list</h2>
+        <table border="1" cellpadding="4" cellspacing="0">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Hostname</th>
+                <th>Provider</th>
+                <th>IP</th>
+                <th>Status</th>
+                <th>Created</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{ range .Servers }}
+            <tr>
+                <td><a href="/servers/{{ .ID }}">{{ .ID }}</a></td>
+                <td>{{ .Name }}</td>
+                <td>{{ .Hostname }}</td>
+                <td>{{ .Provider }}</td>
+                <td>{{ .IPAddress }}</td>
+                <td>{{ .Status }}</td>
+                <td>{{ .CreatedAt }}</td>
+            </tr>
+            {{ else }}
+            <tr>
+                <td colspan="7">No servers yet.</td>
+            </tr>
+            {{ end }}
+            </tbody>
+        </table>
+    </section>
+</main>
+</body>
+</html>
+
