@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SWORD-GO Cloudflare Zone</title>
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+</head>
+<body>
+<main>
+    <p><a href="/cloudflare/{{ .Integration.ID }}">← Back to zones</a></p>
+    <h1>Zone: {{ .ZoneName }}</h1>
+    <p>Zone ID: {{ .ZoneID }}</p>
+
+    <form method="post" action="/cloudflare/{{ .Integration.ID }}/{{ .ZoneID }}/purge-cache">
+        <button type="submit">Purge cache</button>
+    </form>
+
+    <h2>DNS record upsert</h2>
+    <form method="post" action="/cloudflare/{{ .Integration.ID }}/{{ .ZoneID }}/dns-records">
+        <label>Name <input name="name" required placeholder="example.com"></label><br>
+        <label>Type
+            <select name="type" required>
+                <option value="A">A</option>
+                <option value="CNAME">CNAME</option>
+                <option value="both">both</option>
+            </select>
+        </label><br>
+        <label>Content <input name="content" required placeholder="203.0.113.10 or target.example.com"></label><br>
+        <label>CNAME content (for type=both) <input name="cname_content"></label><br>
+        <label>TTL <input name="ttl" type="number" value="1" min="1"></label><br>
+        <label>Proxied <input type="checkbox" name="proxied" value="1"></label><br>
+        <button type="submit">Upsert record</button>
+    </form>
+
+    <h2>DNS records</h2>
+    <table border="1" cellpadding="4" cellspacing="0">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Type</th>
+            <th>Name</th>
+            <th>Content</th>
+            <th>TTL</th>
+            <th>Proxied</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{ range .DNSRecords }}
+        <tr>
+            <td>{{ index . "id" }}</td>
+            <td>{{ index . "type" }}</td>
+            <td>{{ index . "name" }}</td>
+            <td>{{ index . "content" }}</td>
+            <td>{{ index . "ttl" }}</td>
+            <td>{{ index . "proxied" }}</td>
+            <td>
+                <form method="post" action="/cloudflare/{{ $.Integration.ID }}/{{ $.ZoneID }}/dns-records/{{ index . "id" }}" style="display:inline;">
+                    <input type="hidden" name="_method" value="PATCH">
+                    <input type="hidden" name="type" value="{{ index . "type" }}">
+                    <input type="hidden" name="name" value="{{ index . "name" }}">
+                    <input type="hidden" name="content" value="{{ index . "content" }}">
+                    <input type="hidden" name="ttl" value="{{ index . "ttl" }}">
+                    <button type="submit">Refresh</button>
+                </form>
+                <form method="post" action="/cloudflare/{{ $.Integration.ID }}/{{ $.ZoneID }}/dns-records/{{ index . "id" }}" style="display:inline;">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {{ else }}
+        <tr><td colspan="7">No DNS records found.</td></tr>
+        {{ end }}
+        </tbody>
+    </table>
+
+    <h2>Analytics (raw)</h2>
+    <pre>{{ .Analytics }}</pre>
+
+    <h2>SSL settings (raw)</h2>
+    <pre>{{ .SSLSettings }}</pre>
+</main>
+</body>
+</html>
+

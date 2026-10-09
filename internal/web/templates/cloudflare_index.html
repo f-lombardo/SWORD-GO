@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SWORD-GO Cloudflare</title>
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+</head>
+<body>
+<main>
+    <header>
+        <h1>Cloudflare</h1>
+        <p>
+            <a href="/settings/integrations">Integrations</a> |
+            <a href="/servers">Servers</a>
+        </p>
+    </header>
+
+    <section>
+        <h2>Cloudflare integrations</h2>
+        <table border="1" cellpadding="4" cellspacing="0">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Provider</th>
+                <th>Open zones</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{ range .Integrations }}
+            <tr>
+                <td>{{ .ID }}</td>
+                <td>{{ .Name }}</td>
+                <td>{{ .Provider }}</td>
+                <td><a href="/cloudflare/{{ .ID }}">View zones</a></td>
+            </tr>
+            {{ else }}
+            <tr><td colspan="4">No Cloudflare integration configured.</td></tr>
+            {{ end }}
+            </tbody>
+        </table>
+    </section>
+</main>
+</body>
+</html>
+

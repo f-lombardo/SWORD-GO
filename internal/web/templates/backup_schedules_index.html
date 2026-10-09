@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SWORD-GO Backup Schedules</title>
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+</head>
+<body>
+<main>
+    <header>
+        <h1>Backup Schedules</h1>
+        <p>
+            <a href="/servers">Servers</a> |
+            <a href="/sites">Sites</a> |
+            <a href="/backup-destinations">Backup destinations</a> |
+            <a href="/settings/integrations">Integrations</a> |
+            <a href="/cloudflare">Cloudflare</a>
+        </p>
+    </header>
+
+    <table border="1" cellpadding="4" cellspacing="0">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Server</th>
+            <th>Destination</th>
+            <th>Frequency</th>
+            <th>Time</th>
+            <th>Enabled</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{ range .Schedules }}
+        <tr>
+            <td>{{ .ID }}</td>
+            <td>{{ .ServerID }}</td>
+            <td>{{ .BackupDestinationID }}</td>
+            <td>{{ .Frequency }}</td>
+            <td>{{ .Time }}</td>
+            <td>{{ .IsEnabled }}</td>
+        </tr>
+        {{ else }}
+        <tr><td colspan="6">No schedules yet.</td></tr>
+        {{ end }}
+        </tbody>
+    </table>
+</main>
+</body>
+</html>

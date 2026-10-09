@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SWORD-GO Cloudflare Zones</title>
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+</head>
+<body>
+<main>
+    <p><a href="/cloudflare">← Back to Cloudflare integrations</a></p>
+    <h1>Zones for {{ .Integration.Name }}</h1>
+
+    <table border="1" cellpadding="4" cellspacing="0">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Open</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{ range .Zones }}
+        <tr>
+            <td>{{ index . "id" }}</td>
+            <td>{{ index . "name" }}</td>
+            <td>{{ index . "status" }}</td>
+            <td><a href="/cloudflare/{{ $.Integration.ID }}/{{ index . "id" }}">Open zone</a></td>
+        </tr>
+        {{ else }}
+        <tr><td colspan="4">No zones found.</td></tr>
+        {{ end }}
+        </tbody>
+    </table>
+</main>
+</body>
+</html>
+

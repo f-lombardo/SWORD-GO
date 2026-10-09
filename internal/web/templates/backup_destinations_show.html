@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SWORD-GO Backup Destination {{ .Destination.ID }}</title>
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+</head>
+<body>
+<main>
+    <p><a href="/backup-destinations">← Back to destinations</a></p>
+    <h1>{{ .Destination.Name }}</h1>
+
+    <dl>
+        <dt>ID</dt><dd>{{ .Destination.ID }}</dd>
+        <dt>Type</dt><dd>{{ .Destination.Type }}</dd>
+        <dt>Host</dt><dd>{{ .Destination.Username }}@{{ .Destination.Host }}:{{ .Destination.Port }}</dd>
+        <dt>Auth method</dt><dd>{{ .Destination.AuthMethod }}</dd>
+        <dt>Storage path</dt><dd>{{ .Destination.StoragePath }}</dd>
+        <dt>Status</dt><dd>{{ .Destination.Status }}</dd>
+    </dl>
+
+    <h2>Update destination</h2>
+    <form method="post" action="/backup-destinations/{{ .Destination.ID }}">
+        <input type="hidden" name="_method" value="PATCH">
+        <label>Name <input name="name" value="{{ .Destination.Name }}" required></label><br>
+        <label>Type <input name="type" value="{{ .Destination.Type }}" required></label><br>
+        <label>Host <input name="host" value="{{ .Destination.Host }}" required></label><br>
+        <label>Port <input name="port" type="number" value="{{ .Destination.Port }}" min="1" max="65535" required></label><br>
+        <label>Username <input name="username" value="{{ .Destination.Username }}" required></label><br>
+        <label>Auth method
+            <select name="auth_method" required>
+                <option value="password">password</option>
+                <option value="ssh_key">ssh_key</option>
+            </select>
+        </label><br>
+        <label>Password (leave blank to keep current) <input name="password" type="password"></label><br>
+        <label>SSH private key (leave blank to keep current) <textarea name="ssh_private_key" rows="4" cols="60"></textarea></label><br>
+        <label>Storage path <input name="storage_path" value="{{ .Destination.StoragePath }}" required></label><br>
+        <button type="submit">Update</button>
+    </form>
+
+    <h2>Delete destination</h2>
+    <form method="post" action="/backup-destinations/{{ .Destination.ID }}">
+        <input type="hidden" name="_method" value="DELETE">
+        <button type="submit">Delete</button>
+    </form>
+
+    <h2>Schedules using this destination</h2>
+    <ul>
+        {{ range .Schedules }}
+        {{ if eq .BackupDestinationID $.Destination.ID }}
+        <li>Schedule #{{ .ID }} on server #{{ .ServerID }} ({{ .Frequency }} at {{ .Time }})</li>
+        {{ end }}
+        {{ else }}
+        <li>No schedules yet.</li>
+        {{ end }}
+    </ul>
+</main>
+</body>
+</html>
+

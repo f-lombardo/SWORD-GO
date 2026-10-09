@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SWORD-GO Backup Destinations</title>
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+</head>
+<body>
+<main>
+    <header>
+        <h1>Backup Destinations</h1>
+        <p>
+            <a href="/servers">Servers</a> |
+            <a href="/sites">Sites</a> |
+            <a href="/backup-schedules">Backup schedules</a> |
+            <a href="/settings/integrations">Integrations</a> |
+            <a href="/cloudflare">Cloudflare</a>
+        </p>
+    </header>
+
+    {{ if .Error }}
+    <p style="color:red;">{{ .Error }}</p>
+    {{ end }}
+
+    <section>
+        <h2>Create destination</h2>
+        <form method="post" action="/backup-destinations">
+            <label>Name <input name="name" required></label><br>
+            <label>Type <input name="type" value="borg" required></label><br>
+            <label>Host <input name="host" required></label><br>
+            <label>Port <input name="port" type="number" value="22" min="1" max="65535" required></label><br>
+            <label>Username <input name="username" required></label><br>
+            <label>Auth method
+                <select name="auth_method" required>
+                    <option value="password">password</option>
+                    <option value="ssh_key">ssh_key</option>
+                </select>
+            </label><br>
+            <label>Password <input name="password" type="password"></label><br>
+            <label>SSH private key <textarea name="ssh_private_key" rows="4" cols="60"></textarea></label><br>
+            <label>Storage path <input name="storage_path" value="/srv/backups" required></label><br>
+            <button type="submit">Create destination</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Destinations</h2>
+        <table border="1" cellpadding="4" cellspacing="0">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Host</th>
+                <th>Status</th>
+                <th>Last connected</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{ range .Destinations }}
+            <tr>
+                <td><a href="/backup-destinations/{{ .ID }}">{{ .ID }}</a></td>
+                <td>{{ .Name }}</td>
+                <td>{{ .Username }}@{{ .Host }}:{{ .Port }}</td>
+                <td>{{ .Status }}</td>
+                <td>{{ .LastConnectedAt }}</td>
+            </tr>
+            {{ else }}
+            <tr><td colspan="5">No destinations yet.</td></tr>
+            {{ end }}
+            </tbody>
+        </table>
+    </section>
+</main>
+</body>
+</html>

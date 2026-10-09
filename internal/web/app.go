@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"time"
 
+	"sword-go/internal/app/backups"
+	"sword-go/internal/app/integrations"
 	"sword-go/internal/app/servers"
 	"sword-go/internal/app/sites"
 	"sword-go/internal/cloud/digitalocean"
@@ -20,13 +22,17 @@ import (
 )
 
 type App struct {
-	server         *http.Server
-	templates      *template.Template
-	serversService *servers.Service
-	serversStore   *servers.Store
-	sitesService   *sites.Service
-	sitesStore     *sites.Store
-	auth           *authService
+	server              *http.Server
+	templates           *template.Template
+	serversService      *servers.Service
+	serversStore        *servers.Store
+	sitesService        *sites.Service
+	sitesStore          *sites.Store
+	backupsService      *backups.Service
+	backupsStore        *backups.Store
+	integrationsService *integrations.Service
+	integrationsStore   *integrations.Store
+	auth                *authService
 }
 
 func (a *App) String() string {
@@ -47,12 +53,20 @@ func NewApp() (*App, error) {
 
 	store := servers.NewStore(database)
 	sitesStore := sites.NewStore(database)
+	backupsStore := backups.NewStore(database)
+	integrationsStore := integrations.NewStore(database)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err = store.EnsureSchema(ctx); err != nil {
 		return nil, err
 	}
 	if err = sitesStore.EnsureSchema(ctx); err != nil {
+		return nil, err
+	}
+	if err = backupsStore.EnsureSchema(ctx); err != nil {
+		return nil, err
+	}
+	if err = integrationsStore.EnsureSchema(ctx); err != nil {
 		return nil, err
 	}
 
@@ -64,13 +78,19 @@ func NewApp() (*App, error) {
 	)
 	baseURL := cmpOr(os.Getenv("SWORD_GO_BASE_URL"), "http://localhost:"+cmpOr(os.Getenv("SWORD_GO_HTTP_PORT"), "8088"))
 	sitesService := sites.NewService(sitesStore, store, baseURL)
+	backupsService := backups.NewService(backupsStore, store, sitesStore)
+	integrationsService := integrations.NewService(integrationsStore)
 
 	app := &App{
-		templates:      templates,
-		serversService: service,
-		serversStore:   store,
-		sitesService:   sitesService,
-		sitesStore:     sitesStore,
+		templates:           templates,
+		serversService:      service,
+		serversStore:        store,
+		sitesService:        sitesService,
+		sitesStore:          sitesStore,
+		backupsService:      backupsService,
+		backupsStore:        backupsStore,
+		integrationsService: integrationsService,
+		integrationsStore:   integrationsStore,
 		auth: newAuthService(
 			cmpOr(os.Getenv("SWORD_GO_ADMIN_EMAIL"), "admin@example.com"),
 			cmpOr(os.Getenv("SWORD_GO_ADMIN_PASSWORD"), "password"),
@@ -90,6 +110,8 @@ func NewApp() (*App, error) {
 }
 
 func (a *App) Run(ctx context.Context) error {
+	go a.startBackupDispatcher(ctx)
+
 	go func() {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -102,6 +124,20 @@ func (a *App) Run(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (a *App) startBackupDispatcher(ctx context.Context) {
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case tickTime := <-ticker.C:
+			_, _ = a.backupsService.DispatchDueBackups(context.Background(), tickTime.UTC())
+		}
+	}
 }
 
 func (a *App) renderTemplate(w http.ResponseWriter, name string, data any) {

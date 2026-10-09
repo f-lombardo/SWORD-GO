@@ -115,6 +115,56 @@ ORDER BY created_at DESC
 	return out, nil
 }
 
+func (s *Store) ListByServer(ctx context.Context, serverID int64) ([]Site, error) {
+	rows, err := s.db.QueryContext(ctx, `
+SELECT id, server_id, site_label, domain, php_version, db_name, db_user, db_password,
+       install_token, callback_signature, status, current_step, install_log,
+       installed_at, created_at, updated_at
+FROM sites
+WHERE server_id = ?
+ORDER BY created_at DESC
+`, serverID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]Site, 0)
+	for rows.Next() {
+		site, scanErr := scanSite(rows)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		out = append(out, site)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) ListInstalledByServer(ctx context.Context, serverID int64) ([]Site, error) {
+	rows, err := s.db.QueryContext(ctx, `
+SELECT id, server_id, site_label, domain, php_version, db_name, db_user, db_password,
+       install_token, callback_signature, status, current_step, install_log,
+       installed_at, created_at, updated_at
+FROM sites
+WHERE server_id = ? AND status = 'installed'
+ORDER BY created_at DESC
+`, serverID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]Site, 0)
+	for rows.Next() {
+		site, scanErr := scanSite(rows)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		out = append(out, site)
+	}
+	return out, rows.Err()
+}
+
 func (s *Store) GetByID(ctx context.Context, id int64) (Site, error) {
 	row := s.db.QueryRowContext(ctx, `
 SELECT id, server_id, site_label, domain, php_version, db_name, db_user, db_password,

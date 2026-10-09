@@ -8,6 +8,12 @@ The project includes:
 - command-line provisioning parity for DigitalOcean and Hetzner
 - first web migration slice for **Servers** (server-rendered with **HTMX**, no Node.js runtime)
 - second web migration slice for **Sites** (create/show/delete + install/delete scripts + install callback)
+- third web migration slice for **Backups** (destinations, schedules, due dispatch, and run history)
+- fourth web migration slice for **Integrations + Cloudflare** (integrations CRUD, zone browsing, DNS CRUD/upsert, cache purge)
+
+## Cloudflare integration documentation
+
+See: `docs/CLOUDFLARE-INTEGRATION.md`
 
 ## Build
 

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SWORD-GO Integrations</title>
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+</head>
+<body>
+<main>
+    <header>
+        <h1>Integrations</h1>
+        <p>
+            <a href="/servers">Servers</a> |
+            <a href="/sites">Sites</a> |
+            <a href="/backup-destinations">Backup destinations</a> |
+            <a href="/cloudflare">Cloudflare</a>
+        </p>
+    </header>
+
+    {{ if .Error }}
+    <p style="color:red;">{{ .Error }}</p>
+    {{ end }}
+
+    <section>
+        <h2>Add integration</h2>
+        <form method="post" action="/settings/integrations">
+            <label>Name <input name="name" required></label><br>
+            <label>Provider
+                <select name="provider" required>
+                    <option value="cloudflare">cloudflare</option>
+                    <option value="digital_ocean">digital_ocean</option>
+                    <option value="hetzner">hetzner</option>
+                </select>
+            </label><br>
+            <label>Auth type
+                <select name="type" required>
+                    <option value="api_token">api_token</option>
+                    <option value="global_key">global_key</option>
+                </select>
+            </label><br>
+            <label>Token <input name="token"></label><br>
+            <label>Email <input name="email" type="email"></label><br>
+            <label>Key <input name="key"></label><br>
+            <button type="submit">Create integration</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Configured integrations</h2>
+        <table border="1" cellpadding="4" cellspacing="0">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Provider</th>
+                <th>Type</th>
+                <th>Token</th>
+                <th>Email</th>
+                <th>Key</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{ range .Integrations }}
+            <tr>
+                <td>{{ .ID }}</td>
+                <td>{{ .Name }}</td>
+                <td>{{ .Provider }}</td>
+                <td>{{ .Credentials.Type }}</td>
+                <td>{{ .Credentials.Token }}</td>
+                <td>{{ .Credentials.Email }}</td>
+                <td>{{ .Credentials.Key }}</td>
+                <td>
+                    <form method="post" action="/settings/integrations/{{ .ID }}" style="display:inline;">
+                        <input type="hidden" name="_method" value="PATCH">
+                        <input type="hidden" name="name" value="{{ .Name }}">
+                        <input type="hidden" name="type" value="{{ .Credentials.Type }}">
+                        <button type="submit">Keep/refresh</button>
+                    </form>
+                    <form method="post" action="/settings/integrations/{{ .ID }}" style="display:inline;">
+                        <input type="hidden" name="_method" value="DELETE">
+                        <button type="submit">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {{ else }}
+            <tr><td colspan="8">No integrations configured.</td></tr>
+            {{ end }}
+            </tbody>
+        </table>
+    </section>
+</main>
+</body>
+</html>
+
