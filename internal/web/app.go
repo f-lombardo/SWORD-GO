@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"sword-go/internal/app/servers"
+	"sword-go/internal/app/sites"
 	"sword-go/internal/cloud/digitalocean"
 	"sword-go/internal/cloud/hetzner"
 
@@ -23,6 +24,8 @@ type App struct {
 	templates      *template.Template
 	serversService *servers.Service
 	serversStore   *servers.Store
+	sitesService   *sites.Service
+	sitesStore     *sites.Store
 	auth           *authService
 }
 
@@ -43,9 +46,13 @@ func NewApp() (*App, error) {
 	}
 
 	store := servers.NewStore(database)
+	sitesStore := sites.NewStore(database)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err = store.EnsureSchema(ctx); err != nil {
+		return nil, err
+	}
+	if err = sitesStore.EnsureSchema(ctx); err != nil {
 		return nil, err
 	}
 
@@ -55,11 +62,15 @@ func NewApp() (*App, error) {
 		digitalocean.NewCreator(httpClient),
 		hetzner.NewCreator(httpClient),
 	)
+	baseURL := cmpOr(os.Getenv("SWORD_GO_BASE_URL"), "http://localhost:"+cmpOr(os.Getenv("SWORD_GO_HTTP_PORT"), "8088"))
+	sitesService := sites.NewService(sitesStore, store, baseURL)
 
 	app := &App{
 		templates:      templates,
 		serversService: service,
 		serversStore:   store,
+		sitesService:   sitesService,
+		sitesStore:     sitesStore,
 		auth: newAuthService(
 			cmpOr(os.Getenv("SWORD_GO_ADMIN_EMAIL"), "admin@example.com"),
 			cmpOr(os.Getenv("SWORD_GO_ADMIN_PASSWORD"), "password"),
@@ -100,10 +111,10 @@ func (a *App) renderTemplate(w http.ResponseWriter, name string, data any) {
 	}
 }
 
-func (a *App) parseServerID(pathValue string) (int64, error) {
+func parsePositiveID(pathValue string) (int64, error) {
 	value, err := strconv.ParseInt(pathValue, 10, 64)
 	if err != nil || value < 1 {
-		return 0, fmt.Errorf("invalid server id")
+		return 0, fmt.Errorf("invalid id")
 	}
 	return value, nil
 }

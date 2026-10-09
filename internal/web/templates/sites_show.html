@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SWORD-GO Site {{ .Site.ID }}</title>
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+</head>
+<body>
+<main>
+    <p><a href="/sites">← Back to sites</a></p>
+    <h1>{{ .Site.Domain }}</h1>
+
+    <dl>
+        <dt>ID</dt><dd>{{ .Site.ID }}</dd>
+        <dt>Server</dt><dd>{{ .Server.Name }} ({{ .Server.IPAddress }})</dd>
+        <dt>PHP Version</dt><dd>{{ .Site.PHPVersion }}</dd>
+        <dt>Status</dt><dd>{{ .Site.Status }}</dd>
+        <dt>Current Step</dt><dd>{{ .Site.CurrentStep }}</dd>
+    </dl>
+
+    <h2>Scripts</h2>
+    <p>Install: <a href="{{ .InstallScriptURL }}" target="_blank">{{ .InstallScriptURL }}</a></p>
+    <p>Delete: <a href="{{ .DeleteScriptURL }}" target="_blank">{{ .DeleteScriptURL }}</a></p>
+    <p>Callback URL: <code>{{ .CallbackURL }}</code></p>
+
+    <h2>Install log</h2>
+    <ul>
+        {{ range .Site.InstallLog }}
+        <li>{{ .Timestamp }} — {{ .Step }}</li>
+        {{ else }}
+        <li>No log entries yet.</li>
+        {{ end }}
+    </ul>
+
+    <h2>Delete site</h2>
+    <form method="post" action="/sites/{{ .Site.ID }}">
+        <input type="hidden" name="_method" value="DELETE">
+        <button type="submit">Delete site</button>
+    </form>
+</main>
+</body>
+</html>
+

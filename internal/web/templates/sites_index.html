@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SWORD-GO Sites</title>
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+</head>
+<body>
+<main>
+    <header>
+        <h1>Sites</h1>
+        <p><a href="/servers">Servers</a></p>
+    </header>
+
+    {{ if .Error }}
+    <p style="color:red;">{{ .Error }}</p>
+    {{ end }}
+
+    <section>
+        <h2>Create site</h2>
+        <form method="post" action="/sites">
+            <label>Server
+                <select name="server_id" required>
+                    <option value="">Select server</option>
+                    {{ range .Servers }}
+                    <option value="{{ .ID }}">{{ .Name }} ({{ .IPAddress }})</option>
+                    {{ end }}
+                </select>
+            </label><br>
+            <label>Domain <input name="domain" required placeholder="example.com"></label><br>
+            <label>PHP version
+                <select name="php_version" required>
+                    <option value="8.1">8.1</option>
+                    <option value="8.2">8.2</option>
+                    <option value="8.3" selected>8.3</option>
+                    <option value="8.4">8.4</option>
+                </select>
+            </label><br>
+            <label>WP admin user <input name="wp_admin_user" required value="sword_admin"></label><br>
+            <label>WP admin password <input name="wp_admin_password" type="password" required></label><br>
+            <label>WP admin email <input name="wp_admin_email" type="email" required value="admin@example.com"></label><br>
+            <label>WP admin display name <input name="wp_admin_display_name" required value="SWORD Admin"></label><br>
+            <button type="submit">Create site</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Site list</h2>
+        <table border="1" cellpadding="4" cellspacing="0">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Domain</th>
+                <th>Server ID</th>
+                <th>PHP</th>
+                <th>Status</th>
+                <th>Created</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{ range .Sites }}
+            <tr>
+                <td><a href="/sites/{{ .ID }}">{{ .ID }}</a></td>
+                <td>{{ .Domain }}</td>
+                <td>{{ .ServerID }}</td>
+                <td>{{ .PHPVersion }}</td>
+                <td>{{ .Status }}</td>
+                <td>{{ .CreatedAt }}</td>
+            </tr>
+            {{ else }}
+            <tr>
+                <td colspan="6">No sites yet.</td>
+            </tr>
+            {{ end }}
+            </tbody>
+        </table>
+    </section>
+</main>
+</body>
+</html>
+

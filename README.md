@@ -7,6 +7,7 @@ The project includes:
 
 - command-line provisioning parity for DigitalOcean and Hetzner
 - first web migration slice for **Servers** (server-rendered with **HTMX**, no Node.js runtime)
+- second web migration slice for **Sites** (create/show/delete + install/delete scripts + install callback)
 
 ## Build
 
@@ -49,3 +50,4 @@ The `--public-key` value accepts either:
 - `SWORD_GO_ADMIN_EMAIL` (default `admin@example.com`)
 - `SWORD_GO_ADMIN_PASSWORD` (default `password`)
 - `SWORD_GO_SESSION_SECRET` (default `change-me-in-env`)
+- `SWORD_GO_BASE_URL` (default inferred as `http://localhost:$SWORD_GO_HTTP_PORT`)
