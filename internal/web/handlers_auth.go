@@ -5,6 +5,22 @@ import (
 	"time"
 )
 
+func (a *App) rootHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if a.auth != nil && a.auth.isAuthenticated(r) {
+		http.Redirect(w, r, "/servers", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
+}
+
 func (a *App) loginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		a.renderTemplate(w, r, "login.html", map[string]any{"Error": ""})

@@ -4,52 +4,59 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SWORD-GO Backup Destination {{ .Destination.ID }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/htmx.org@2.0.3"></script>
 </head>
-<body>
-<main>
-    <p><a href="/backup-destinations">← Back to destinations</a></p>
-    <h1>{{ .Destination.Name }}</h1>
+<body class="bg-light">
+<main class="container py-4">
+    <p><a class="btn btn-outline-secondary btn-sm" href="/backup-destinations">← Back to destinations</a></p>
+    <h1 class="h3 mb-3">{{ .Destination.Name }}</h1>
 
-    <dl>
-        <dt>ID</dt><dd>{{ .Destination.ID }}</dd>
-        <dt>Type</dt><dd>{{ .Destination.Type }}</dd>
-        <dt>Host</dt><dd>{{ .Destination.Username }}@{{ .Destination.Host }}:{{ .Destination.Port }}</dd>
-        <dt>Auth method</dt><dd>{{ .Destination.AuthMethod }}</dd>
-        <dt>Storage path</dt><dd>{{ .Destination.StoragePath }}</dd>
-        <dt>Status</dt><dd>{{ .Destination.Status }}</dd>
+    <dl class="row mb-4">
+        <dt class="col-sm-3">ID</dt><dd class="col-sm-9">{{ .Destination.ID }}</dd>
+        <dt class="col-sm-3">Type</dt><dd class="col-sm-9">{{ .Destination.Type }}</dd>
+        <dt class="col-sm-3">Host</dt><dd class="col-sm-9">{{ .Destination.Username }}@{{ .Destination.Host }}:{{ .Destination.Port }}</dd>
+        <dt class="col-sm-3">Auth method</dt><dd class="col-sm-9">{{ .Destination.AuthMethod }}</dd>
+        <dt class="col-sm-3">Storage path</dt><dd class="col-sm-9">{{ .Destination.StoragePath }}</dd>
+        <dt class="col-sm-3">Status</dt><dd class="col-sm-9">{{ .Destination.Status }}</dd>
     </dl>
 
-    <h2>Update destination</h2>
-    <form method="post" action="/backup-destinations/{{ .Destination.ID }}">
+    <section class="card shadow-sm mb-4">
+        <div class="card-body">
+    <h2 class="h5 mb-3">Update destination</h2>
+    <form method="post" action="/backup-destinations/{{ .Destination.ID }}" class="row g-3">
         <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
         <input type="hidden" name="_method" value="PATCH">
-        <label>Name <input name="name" value="{{ .Destination.Name }}" required></label><br>
-        <label>Type <input name="type" value="{{ .Destination.Type }}" required></label><br>
-        <label>Host <input name="host" value="{{ .Destination.Host }}" required></label><br>
-        <label>Port <input name="port" type="number" value="{{ .Destination.Port }}" min="1" max="65535" required></label><br>
-        <label>Username <input name="username" value="{{ .Destination.Username }}" required></label><br>
-        <label>Auth method
-            <select name="auth_method" required>
+        <div class="col-md-4"><label class="form-label">Name <input class="form-control" name="name" value="{{ .Destination.Name }}" required></label></div>
+        <div class="col-md-2"><label class="form-label">Type <input class="form-control" name="type" value="{{ .Destination.Type }}" required></label></div>
+        <div class="col-md-3"><label class="form-label">Host <input class="form-control" name="host" value="{{ .Destination.Host }}" required></label></div>
+        <div class="col-md-3"><label class="form-label">Port <input class="form-control" name="port" type="number" value="{{ .Destination.Port }}" min="1" max="65535" required></label></div>
+        <div class="col-md-4"><label class="form-label">Username <input class="form-control" name="username" value="{{ .Destination.Username }}" required></label></div>
+        <div class="col-md-4"><label class="form-label">Auth method
+            <select class="form-select" name="auth_method" required>
                 <option value="password">password</option>
                 <option value="ssh_key">ssh_key</option>
             </select>
-        </label><br>
-        <label>Password (leave blank to keep current) <input name="password" type="password"></label><br>
-        <label>SSH private key (leave blank to keep current) <textarea name="ssh_private_key" rows="4" cols="60"></textarea></label><br>
-        <label>Storage path <input name="storage_path" value="{{ .Destination.StoragePath }}" required></label><br>
-        <button type="submit">Update</button>
+        </label></div>
+        <div class="col-md-4"><label class="form-label">Password (leave blank to keep current) <input class="form-control" name="password" type="password"></label></div>
+        <div class="col-12"><label class="form-label">SSH private key (leave blank to keep current) <textarea class="form-control" name="ssh_private_key" rows="4"></textarea></label></div>
+        <div class="col-md-6"><label class="form-label">Storage path <input class="form-control" name="storage_path" value="{{ .Destination.StoragePath }}" required></label></div>
+        <div class="col-12"><button class="btn btn-primary" type="submit">Update</button></div>
     </form>
+        </div>
+    </section>
 
-    <h2>Delete destination</h2>
+    <h2 class="h5">Delete destination</h2>
     <form method="post" action="/backup-destinations/{{ .Destination.ID }}">
         <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
         <input type="hidden" name="_method" value="DELETE">
-        <button type="submit">Delete</button>
+        <button class="btn btn-danger" type="submit">Delete</button>
     </form>
 
-    <h2>Schedules using this destination</h2>
-    <ul>
+    <section class="card shadow-sm mt-4">
+        <div class="card-body">
+    <h2 class="h5">Schedules using this destination</h2>
+    <ul class="mb-0">
         {{ range .Schedules }}
         {{ if eq .BackupDestinationID $.Destination.ID }}
         <li>Schedule #{{ .ID }} on server #{{ .ServerID }} ({{ .Frequency }} at {{ .Time }})</li>
@@ -58,6 +65,8 @@
         <li>No schedules yet.</li>
         {{ end }}
     </ul>
+        </div>
+    </section>
 </main>
 </body>
 </html>

@@ -4,40 +4,49 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SWORD-GO Site {{ .Site.ID }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/htmx.org@2.0.3"></script>
 </head>
-<body>
-<main>
-    <p><a href="/sites">← Back to sites</a></p>
-    <h1>{{ .Site.Domain }}</h1>
+<body class="bg-light">
+<main class="container py-4">
+    <p><a class="btn btn-outline-secondary btn-sm" href="/sites">← Back to sites</a></p>
+    <h1 class="h3 mb-3">{{ .Site.Domain }}</h1>
 
-    <dl>
-        <dt>ID</dt><dd>{{ .Site.ID }}</dd>
-        <dt>Server</dt><dd>{{ .Server.Name }} ({{ .Server.IPAddress }})</dd>
-        <dt>PHP Version</dt><dd>{{ .Site.PHPVersion }}</dd>
-        <dt>Status</dt><dd>{{ .Site.Status }}</dd>
-        <dt>Current Step</dt><dd>{{ .Site.CurrentStep }}</dd>
+    <dl class="row mb-4">
+        <dt class="col-sm-3">ID</dt><dd class="col-sm-9">{{ .Site.ID }}</dd>
+        <dt class="col-sm-3">Server</dt><dd class="col-sm-9">{{ .Server.Name }} ({{ .Server.IPAddress }})</dd>
+        <dt class="col-sm-3">PHP Version</dt><dd class="col-sm-9">{{ .Site.PHPVersion }}</dd>
+        <dt class="col-sm-3">Status</dt><dd class="col-sm-9">{{ .Site.Status }}</dd>
+        <dt class="col-sm-3">Current Step</dt><dd class="col-sm-9">{{ .Site.CurrentStep }}</dd>
     </dl>
 
-    <h2>Scripts</h2>
-    <p>Install: <a href="{{ .InstallScriptURL }}" target="_blank">{{ .InstallScriptURL }}</a></p>
-    <p>Delete: <a href="{{ .DeleteScriptURL }}" target="_blank">{{ .DeleteScriptURL }}</a></p>
-    <p>Callback URL: <code>{{ .CallbackURL }}</code></p>
+    <section class="card shadow-sm mb-4">
+        <div class="card-body">
+    <h2 class="h5">Scripts</h2>
+    <p class="mb-1">Install: <a href="{{ .InstallScriptURL }}" target="_blank">{{ .InstallScriptURL }}</a></p>
+    <p class="mb-1">Delete: <a href="{{ .DeleteScriptURL }}" target="_blank">{{ .DeleteScriptURL }}</a></p>
+    <p class="mb-0">Callback URL: <code>{{ .CallbackURL }}</code></p>
+        </div>
+    </section>
 
-    <h2>Install log</h2>
-    <ul>
+    <section class="card shadow-sm mb-4">
+        <div class="card-body">
+    <h2 class="h5">Install log</h2>
+    <ul class="mb-0">
         {{ range .Site.InstallLog }}
         <li>{{ .Timestamp }} — {{ .Step }}</li>
         {{ else }}
         <li>No log entries yet.</li>
         {{ end }}
     </ul>
+        </div>
+    </section>
 
-    <h2>Delete site</h2>
+    <h2 class="h5">Delete site</h2>
     <form method="post" action="/sites/{{ .Site.ID }}">
         <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
         <input type="hidden" name="_method" value="DELETE">
-        <button type="submit">Delete site</button>
+        <button class="btn btn-danger" type="submit">Delete site</button>
     </form>
 </main>
 </body>

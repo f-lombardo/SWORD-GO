@@ -4,56 +4,63 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SWORD-GO Servers</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/htmx.org@2.0.3"></script>
 </head>
-<body>
-<main>
-    <header>
-        <h1>Servers</h1>
-        <p>
-            <a href="/sites">Sites</a> |
-            <a href="/backup-destinations">Backup destinations</a> |
-            <a href="/backup-schedules">Backup schedules</a> |
-            <a href="/settings/integrations">Integrations</a> |
-            <a href="/cloudflare">Cloudflare</a>
-        </p>
+<body class="bg-light">
+<main class="container py-4">
+    <header class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-2">Servers</h1>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-outline-secondary btn-sm" href="/sites">Sites</a>
+                <a class="btn btn-outline-secondary btn-sm" href="/backup-destinations">Backup destinations</a>
+                <a class="btn btn-outline-secondary btn-sm" href="/backup-schedules">Backup schedules</a>
+                <a class="btn btn-outline-secondary btn-sm" href="/settings/integrations">Integrations</a>
+                <a class="btn btn-outline-secondary btn-sm" href="/cloudflare">Cloudflare</a>
+            </div>
+        </div>
         <form method="post" action="/logout">
             <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-            <button type="submit">Logout</button>
+            <button class="btn btn-outline-danger" type="submit">Logout</button>
         </form>
     </header>
 
     {{ if .Error }}
-    <p style="color:red;">{{ .Error }}</p>
+    <div class="alert alert-danger" role="alert">{{ .Error }}</div>
     {{ end }}
 
-    <section>
-        <h2>Create server</h2>
-        <form method="post" action="/servers">
+    <section class="card shadow-sm mb-4">
+        <div class="card-body">
+        <h2 class="h5 mb-3">Create server</h2>
+        <form method="post" action="/servers" class="row g-3">
             <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-            <label>Name <input name="name" required></label><br>
-            <label>Hostname <input name="hostname" required></label><br>
-            <label>Timezone <input name="timezone" value="UTC" required></label><br>
-            <label>SSH Port <input name="ssh_port" type="number" min="1" max="65535" value="22" required></label><br>
-            <label>Provider
-                <select name="provider">
+            <div class="col-md-6"><label class="form-label">Name <input class="form-control" name="name" required></label></div>
+            <div class="col-md-6"><label class="form-label">Hostname <input class="form-control" name="hostname" required></label></div>
+            <div class="col-md-4"><label class="form-label">Timezone <input class="form-control" name="timezone" value="UTC" required></label></div>
+            <div class="col-md-4"><label class="form-label">SSH Port <input class="form-control" name="ssh_port" type="number" min="1" max="65535" value="22" required></label></div>
+            <div class="col-md-4"><label class="form-label">Provider
+                <select class="form-select" name="provider">
                     <option value="">custom</option>
                     <option value="digital_ocean">digital_ocean</option>
                     <option value="hetzner">hetzner</option>
                 </select>
-            </label><br>
-            <label>Server type <input name="server_type" placeholder="s-1vcpu-1gb or cx23"></label><br>
-            <label>Region/location <input name="region" placeholder="nyc1 or nbg1"></label><br>
-            <label>Image <input name="image"></label><br>
-            <label>IP Address (custom servers) <input name="ip_address"></label><br>
-            <label>Provider API token (not persisted) <input name="api_token" type="password"></label><br>
-            <button type="submit">Create</button>
+            </label></div>
+            <div class="col-md-4"><label class="form-label">Server type <input class="form-control" name="server_type" placeholder="s-1vcpu-1gb or cx23"></label></div>
+            <div class="col-md-4"><label class="form-label">Region/location <input class="form-control" name="region" placeholder="nyc1 or nbg1"></label></div>
+            <div class="col-md-4"><label class="form-label">Image <input class="form-control" name="image"></label></div>
+            <div class="col-md-6"><label class="form-label">IP Address (custom servers) <input class="form-control" name="ip_address"></label></div>
+            <div class="col-md-6"><label class="form-label">Provider API token (not persisted) <input class="form-control" name="api_token" type="password"></label></div>
+            <div class="col-12"><button class="btn btn-primary" type="submit">Create</button></div>
         </form>
+        </div>
     </section>
 
-    <section>
-        <h2>Server list</h2>
-        <table border="1" cellpadding="4" cellspacing="0">
+    <section class="card shadow-sm">
+        <div class="card-body">
+        <h2 class="h5 mb-3">Server list</h2>
+        <div class="table-responsive">
+        <table class="table table-striped table-bordered align-middle">
             <thead>
             <tr>
                 <th>ID</th>
@@ -83,6 +90,8 @@
             {{ end }}
             </tbody>
         </table>
+        </div>
+        </div>
     </section>
 </main>
 </body>

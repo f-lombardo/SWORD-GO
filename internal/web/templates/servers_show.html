@@ -4,63 +4,77 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SWORD-GO Server {{ .Server.ID }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/htmx.org@2.0.3"></script>
 </head>
-<body>
-<main>
-    <p><a href="/servers">← Back to servers</a></p>
-    <p><a href="/backup-destinations">Manage backup destinations</a></p>
-    <h1>{{ .Server.Name }}</h1>
+<body class="bg-light">
+<main class="container py-4">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a class="btn btn-outline-secondary btn-sm" href="/servers">← Back to servers</a>
+        <a class="btn btn-outline-secondary btn-sm" href="/backup-destinations">Manage backup destinations</a>
+    </div>
+    <h1 class="h3 mb-3">{{ .Server.Name }}</h1>
 
-    <dl>
-        <dt>ID</dt><dd>{{ .Server.ID }}</dd>
-        <dt>Hostname</dt><dd>{{ .Server.Hostname }}</dd>
-        <dt>IP Address</dt><dd>{{ .Server.IPAddress }}</dd>
-        <dt>Provider</dt><dd>{{ .Server.Provider }}</dd>
-        <dt>Region</dt><dd>{{ .Server.Region }}</dd>
-        <dt>Status</dt><dd>{{ .Server.Status }}</dd>
-        <dt>Current Step</dt><dd>{{ .Server.CurrentStep }}</dd>
+    <dl class="row mb-4">
+        <dt class="col-sm-3">ID</dt><dd class="col-sm-9">{{ .Server.ID }}</dd>
+        <dt class="col-sm-3">Hostname</dt><dd class="col-sm-9">{{ .Server.Hostname }}</dd>
+        <dt class="col-sm-3">IP Address</dt><dd class="col-sm-9">{{ .Server.IPAddress }}</dd>
+        <dt class="col-sm-3">Provider</dt><dd class="col-sm-9">{{ .Server.Provider }}</dd>
+        <dt class="col-sm-3">Region</dt><dd class="col-sm-9">{{ .Server.Region }}</dd>
+        <dt class="col-sm-3">Status</dt><dd class="col-sm-9">{{ .Server.Status }}</dd>
+        <dt class="col-sm-3">Current Step</dt><dd class="col-sm-9">{{ .Server.CurrentStep }}</dd>
     </dl>
 
-    <h2>Provision script</h2>
-    <p><a href="{{ .ScriptURL }}" target="_blank">{{ .ScriptURL }}</a></p>
-    <pre>{{ .WgetCommand }}</pre>
+    <section class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h2 class="h5">Provision script</h2>
+            <p><a href="{{ .ScriptURL }}" target="_blank">{{ .ScriptURL }}</a></p>
+            <pre class="bg-body-tertiary p-3 rounded mb-0">{{ .WgetCommand }}</pre>
+        </div>
+    </section>
 
-    <h2>Provision log</h2>
-    <ul>
-        {{ range .Server.ProvisionLog }}
-        <li>{{ .Timestamp }} — {{ .Step }}</li>
-        {{ else }}
-        <li>No log entries yet.</li>
-        {{ end }}
-    </ul>
+    <section class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h2 class="h5">Provision log</h2>
+            <ul class="mb-0">
+                {{ range .Server.ProvisionLog }}
+                <li>{{ .Timestamp }} — {{ .Step }}</li>
+                {{ else }}
+                <li>No log entries yet.</li>
+                {{ end }}
+            </ul>
+        </div>
+    </section>
 
-    <h2>Backup schedules</h2>
-    <form method="post" action="/servers/{{ .Server.ID }}/backup-schedules">
+    <section class="card shadow-sm mb-4">
+        <div class="card-body">
+    <h2 class="h5">Backup schedules</h2>
+    <form method="post" action="/servers/{{ .Server.ID }}/backup-schedules" class="row g-3 mb-3">
         <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-        <label>Destination
-            <select name="backup_destination_id" required>
+        <div class="col-md-4"><label class="form-label">Destination
+            <select class="form-select" name="backup_destination_id" required>
                 <option value="">Select destination</option>
                 {{ range .BackupDestinations }}
                 <option value="{{ .ID }}">{{ .Name }} ({{ .Status }})</option>
                 {{ end }}
             </select>
-        </label><br>
-        <label>Frequency
-            <select name="frequency" required>
+        </label></div>
+        <div class="col-md-4"><label class="form-label">Frequency
+            <select class="form-select" name="frequency" required>
                 <option value="daily">daily</option>
                 <option value="weekly">weekly</option>
                 <option value="monthly">monthly</option>
             </select>
-        </label><br>
-        <label>Time (HH:MM) <input name="time" value="02:00" required></label><br>
-        <label>Day of week (0-6) <input name="day_of_week" type="number" min="0" max="6"></label><br>
-        <label>Day of month (1-28) <input name="day_of_month" type="number" min="1" max="28"></label><br>
-        <label>Retention count <input name="retention_count" type="number" min="1" max="365" value="7" required></label><br>
-        <button type="submit">Add schedule</button>
+        </label></div>
+        <div class="col-md-4"><label class="form-label">Time (HH:MM) <input class="form-control" name="time" value="02:00" required></label></div>
+        <div class="col-md-4"><label class="form-label">Day of week (0-6) <input class="form-control" name="day_of_week" type="number" min="0" max="6"></label></div>
+        <div class="col-md-4"><label class="form-label">Day of month (1-28) <input class="form-control" name="day_of_month" type="number" min="1" max="28"></label></div>
+        <div class="col-md-4"><label class="form-label">Retention count <input class="form-control" name="retention_count" type="number" min="1" max="365" value="7" required></label></div>
+        <div class="col-12"><button class="btn btn-primary" type="submit">Add schedule</button></div>
     </form>
 
-    <table border="1" cellpadding="4" cellspacing="0">
+    <div class="table-responsive">
+    <table class="table table-striped table-bordered align-middle">
         <thead>
         <tr>
             <th>ID</th>
@@ -80,14 +94,14 @@
             <td>{{ .Time }}</td>
             <td>{{ .RetentionCount }}</td>
             <td>
-                <form method="post" action="/servers/{{ $.Server.ID }}/backup-schedules/{{ .ID }}/run" style="display:inline;">
+                <form method="post" action="/servers/{{ $.Server.ID }}/backup-schedules/{{ .ID }}/run" class="d-inline">
                     <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
-                    <button type="submit">Run now</button>
+                    <button class="btn btn-sm btn-outline-primary" type="submit">Run now</button>
                 </form>
-                <form method="post" action="/servers/{{ $.Server.ID }}/backup-schedules/{{ .ID }}" style="display:inline;">
+                <form method="post" action="/servers/{{ $.Server.ID }}/backup-schedules/{{ .ID }}" class="d-inline">
                     <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
                     <input type="hidden" name="_method" value="DELETE">
-                    <button type="submit">Delete</button>
+                    <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
                 </form>
             </td>
         </tr>
@@ -96,9 +110,15 @@
         {{ end }}
         </tbody>
     </table>
+    </div>
+        </div>
+    </section>
 
-    <h2>Recent backup runs</h2>
-    <table border="1" cellpadding="4" cellspacing="0">
+    <section class="card shadow-sm">
+        <div class="card-body">
+    <h2 class="h5">Recent backup runs</h2>
+    <div class="table-responsive">
+    <table class="table table-striped table-bordered align-middle">
         <thead>
         <tr>
             <th>ID</th>
@@ -124,6 +144,9 @@
         {{ end }}
         </tbody>
     </table>
+    </div>
+        </div>
+    </section>
 </main>
 </body>
 </html>

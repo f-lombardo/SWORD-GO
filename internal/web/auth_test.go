@@ -46,6 +46,41 @@ func TestRequireCSRFIgnoresSafeMethods(t *testing.T) {
 	}
 }
 
+func TestRootHandlerRedirectsUnauthenticatedToLogin(t *testing.T) {
+	app := &App{auth: mustAuthService(t)}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rr := httptest.NewRecorder()
+
+	app.rootHandler(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Fatalf("expected status 303, got %d", rr.Code)
+	}
+	if location := rr.Header().Get("Location"); location != "/login" {
+		t.Fatalf("expected redirect to /login, got %q", location)
+	}
+}
+
+func TestRootHandlerRedirectsAuthenticatedToServers(t *testing.T) {
+	app := &App{auth: mustAuthService(t)}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rr := httptest.NewRecorder()
+	app.auth.setSession(rr)
+	for _, cookie := range rr.Result().Cookies() {
+		req.AddCookie(cookie)
+	}
+	rr = httptest.NewRecorder()
+
+	app.rootHandler(rr, req)
+
+	if rr.Code != http.StatusSeeOther {
+		t.Fatalf("expected status 303, got %d", rr.Code)
+	}
+	if location := rr.Header().Get("Location"); location != "/servers" {
+		t.Fatalf("expected redirect to /servers, got %q", location)
+	}
+}
+
 func TestRequireCSRFBocksMissingToken(t *testing.T) {
 	app := &App{auth: mustAuthService(t)}
 	handler := app.requireCSRF(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

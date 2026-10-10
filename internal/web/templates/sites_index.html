@@ -4,55 +4,60 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SWORD-GO Sites</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/htmx.org@2.0.3"></script>
 </head>
-<body>
-<main>
-    <header>
-        <h1>Sites</h1>
-        <p>
-            <a href="/servers">Servers</a> |
-            <a href="/backup-destinations">Backup destinations</a> |
-            <a href="/backup-schedules">Backup schedules</a>
-        </p>
+<body class="bg-light">
+<main class="container py-4">
+    <header class="mb-4">
+        <h1 class="h3 mb-2">Sites</h1>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-secondary btn-sm" href="/servers">Servers</a>
+            <a class="btn btn-outline-secondary btn-sm" href="/backup-destinations">Backup destinations</a>
+            <a class="btn btn-outline-secondary btn-sm" href="/backup-schedules">Backup schedules</a>
+        </div>
     </header>
 
     {{ if .Error }}
-    <p style="color:red;">{{ .Error }}</p>
+    <div class="alert alert-danger" role="alert">{{ .Error }}</div>
     {{ end }}
 
-    <section>
-        <h2>Create site</h2>
-        <form method="post" action="/sites">
+    <section class="card shadow-sm mb-4">
+        <div class="card-body">
+        <h2 class="h5 mb-3">Create site</h2>
+        <form method="post" action="/sites" class="row g-3">
             <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-            <label>Server
-                <select name="server_id" required>
+            <div class="col-md-6"><label class="form-label">Server
+                <select class="form-select" name="server_id" required>
                     <option value="">Select server</option>
                     {{ range .Servers }}
                     <option value="{{ .ID }}">{{ .Name }} ({{ .IPAddress }})</option>
                     {{ end }}
                 </select>
-            </label><br>
-            <label>Domain <input name="domain" required placeholder="example.com"></label><br>
-            <label>PHP version
-                <select name="php_version" required>
+            </label></div>
+            <div class="col-md-6"><label class="form-label">Domain <input class="form-control" name="domain" required placeholder="example.com"></label></div>
+            <div class="col-md-3"><label class="form-label">PHP version
+                <select class="form-select" name="php_version" required>
                     <option value="8.1">8.1</option>
                     <option value="8.2">8.2</option>
                     <option value="8.3" selected>8.3</option>
                     <option value="8.4">8.4</option>
                 </select>
-            </label><br>
-            <label>WP admin user <input name="wp_admin_user" required value="sword_admin"></label><br>
-            <label>WP admin password <input name="wp_admin_password" type="password" required></label><br>
-            <label>WP admin email <input name="wp_admin_email" type="email" required value="admin@example.com"></label><br>
-            <label>WP admin display name <input name="wp_admin_display_name" required value="SWORD Admin"></label><br>
-            <button type="submit">Create site</button>
+            </label></div>
+            <div class="col-md-3"><label class="form-label">WP admin user <input class="form-control" name="wp_admin_user" required value="sword_admin"></label></div>
+            <div class="col-md-3"><label class="form-label">WP admin password <input class="form-control" name="wp_admin_password" type="password" required></label></div>
+            <div class="col-md-3"><label class="form-label">WP admin email <input class="form-control" name="wp_admin_email" type="email" required value="admin@example.com"></label></div>
+            <div class="col-md-6"><label class="form-label">WP admin display name <input class="form-control" name="wp_admin_display_name" required value="SWORD Admin"></label></div>
+            <div class="col-12"><button class="btn btn-primary" type="submit">Create site</button></div>
         </form>
+        </div>
     </section>
 
-    <section>
-        <h2>Site list</h2>
-        <table border="1" cellpadding="4" cellspacing="0">
+    <section class="card shadow-sm">
+        <div class="card-body">
+        <h2 class="h5 mb-3">Site list</h2>
+        <div class="table-responsive">
+        <table class="table table-striped table-bordered align-middle">
             <thead>
             <tr>
                 <th>ID</th>
@@ -80,6 +85,8 @@
             {{ end }}
             </tbody>
         </table>
+        </div>
+        </div>
     </section>
 </main>
 </body>

@@ -5,6 +5,7 @@ import "net/http"
 func (a *App) routes() http.Handler {
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("/", a.rootHandler)
 	mux.HandleFunc("/healthz", a.healthzHandler)
 
 	mux.Handle("/login", a.requireCSRF(http.HandlerFunc(a.loginHandler)))
