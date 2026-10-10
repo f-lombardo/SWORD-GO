@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"sword-go/internal/app/backups"
@@ -23,6 +24,7 @@ import (
 
 type App struct {
 	server              *http.Server
+	db                  *sql.DB
 	templates           *template.Template
 	serversService      *servers.Service
 	serversStore        *servers.Store
@@ -33,6 +35,8 @@ type App struct {
 	integrationsService *integrations.Service
 	integrationsStore   *integrations.Store
 	auth                *authService
+	loginLimiter        *loginRateLimiter
+	callbackGuard       *callbackReplayGuard
 }
 
 func (a *App) String() string {
@@ -80,8 +84,24 @@ func NewApp() (*App, error) {
 	sitesService := sites.NewService(sitesStore, store, baseURL)
 	backupsService := backups.NewService(backupsStore, store, sitesStore)
 	integrationsService := integrations.NewService(integrationsStore)
+	secureCookies := parseBoolOrDefault(os.Getenv("SWORD_GO_SECURE_COOKIES"), false)
+	strictAuth := parseBoolOrDefault(os.Getenv("SWORD_GO_AUTH_STRICT"), secureCookies)
+	loginMaxAttempts := parseIntOrDefault(os.Getenv("SWORD_GO_LOGIN_MAX_ATTEMPTS"), 5)
+	loginWindowSeconds := parseIntOrDefault(os.Getenv("SWORD_GO_LOGIN_WINDOW_SECONDS"), 600)
+	auth, err := newAuthService(
+		cmpOr(os.Getenv("SWORD_GO_ADMIN_EMAIL"), "admin@example.com"),
+		cmpOr(os.Getenv("SWORD_GO_ADMIN_PASSWORD"), "password"),
+		strings.TrimSpace(os.Getenv("SWORD_GO_ADMIN_PASSWORD_HASH")),
+		cmpOr(os.Getenv("SWORD_GO_SESSION_SECRET"), "change-me-in-env"),
+		secureCookies,
+		strictAuth,
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	app := &App{
+		db:                  database,
 		templates:           templates,
 		serversService:      service,
 		serversStore:        store,
@@ -91,12 +111,9 @@ func NewApp() (*App, error) {
 		backupsStore:        backupsStore,
 		integrationsService: integrationsService,
 		integrationsStore:   integrationsStore,
-		auth: newAuthService(
-			cmpOr(os.Getenv("SWORD_GO_ADMIN_EMAIL"), "admin@example.com"),
-			cmpOr(os.Getenv("SWORD_GO_ADMIN_PASSWORD"), "password"),
-			cmpOr(os.Getenv("SWORD_GO_SESSION_SECRET"), "change-me-in-env"),
-			parseBoolOrDefault(os.Getenv("SWORD_GO_SECURE_COOKIES"), false),
-		),
+		loginLimiter:        newLoginRateLimiter(loginMaxAttempts, time.Duration(loginWindowSeconds)*time.Second),
+		callbackGuard:       newCallbackReplayGuard(10 * time.Minute),
+		auth:                auth,
 	}
 
 	port := cmpOr(os.Getenv("SWORD_GO_HTTP_PORT"), "8088")
@@ -179,6 +196,17 @@ func parseBoolOrDefault(value string, fallback bool) bool {
 	}
 	parsed, err := strconv.ParseBool(value)
 	if err != nil {
+		return fallback
+	}
+	return parsed
+}
+
+func parseIntOrDefault(value string, fallback int) int {
+	if strings.TrimSpace(value) == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(strings.TrimSpace(value))
+	if err != nil || parsed <= 0 {
 		return fallback
 	}
 	return parsed

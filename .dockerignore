@@ -1,0 +1,8 @@
+.git
+.gitignore
+.idea
+*.db
+*.log
+coverage.*
+*.out
+docs

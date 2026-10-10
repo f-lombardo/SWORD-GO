@@ -7,10 +7,13 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/binary"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 const sessionCookieName = "sword_go_session"
@@ -18,23 +21,67 @@ const csrfCookieName = "sword_go_csrf"
 const sessionTTL = 24 * time.Hour
 
 type authService struct {
-	adminEmail    string
-	adminPassword string
-	secret        []byte
-	secureCookies bool
+	adminEmail        string
+	adminPassword     string
+	adminPasswordHash string
+	secret            []byte
+	secureCookies     bool
+	strictMode        bool
 }
 
-func newAuthService(adminEmail string, adminPassword string, secret string, secureCookies bool) *authService {
-	return &authService{
-		adminEmail:    strings.TrimSpace(adminEmail),
-		adminPassword: adminPassword,
-		secret:        []byte(secret),
-		secureCookies: secureCookies,
+func newAuthService(adminEmail string, adminPassword string, adminPasswordHash string, secret string, secureCookies bool, strictMode bool) (*authService, error) {
+	service := &authService{
+		adminEmail:        strings.TrimSpace(adminEmail),
+		adminPassword:     adminPassword,
+		adminPasswordHash: strings.TrimSpace(adminPasswordHash),
+		secret:            []byte(secret),
+		secureCookies:     secureCookies,
+		strictMode:        strictMode,
 	}
+	if err := service.validateConfiguration(); err != nil {
+		return nil, err
+	}
+	return service, nil
 }
 
 func (a *authService) authenticate(email string, password string) bool {
-	return strings.EqualFold(strings.TrimSpace(email), a.adminEmail) && password == a.adminPassword
+	if !strings.EqualFold(strings.TrimSpace(email), a.adminEmail) {
+		return false
+	}
+	if a.adminPasswordHash != "" {
+		return bcrypt.CompareHashAndPassword([]byte(a.adminPasswordHash), []byte(password)) == nil
+	}
+	return password == a.adminPassword
+}
+
+func (a *authService) validateConfiguration() error {
+	if a.adminEmail == "" || !strings.Contains(a.adminEmail, "@") {
+		return errors.New("SWORD_GO_ADMIN_EMAIL must be a valid email address")
+	}
+	if len(a.secret) < 16 {
+		return errors.New("SWORD_GO_SESSION_SECRET must be at least 16 characters")
+	}
+	if a.strictMode && len(a.secret) < 32 {
+		return errors.New("SWORD_GO_SESSION_SECRET must be at least 32 characters in strict mode")
+	}
+	if a.strictMode && string(a.secret) == "change-me-in-env" {
+		return errors.New("SWORD_GO_SESSION_SECRET uses the default insecure value")
+	}
+
+	if a.adminPasswordHash != "" {
+		if _, err := bcrypt.Cost([]byte(a.adminPasswordHash)); err != nil {
+			return errors.New("SWORD_GO_ADMIN_PASSWORD_HASH is not a valid bcrypt hash")
+		}
+		return nil
+	}
+
+	if a.adminPassword == "" {
+		return errors.New("set SWORD_GO_ADMIN_PASSWORD_HASH (preferred) or SWORD_GO_ADMIN_PASSWORD")
+	}
+	if a.strictMode {
+		return errors.New("SWORD_GO_ADMIN_PASSWORD_HASH is required in strict mode")
+	}
+	return nil
 }
 
 func (a *authService) setSession(w http.ResponseWriter) {
