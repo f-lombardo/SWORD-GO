@@ -37,10 +37,11 @@ type App struct {
 	auth                *authService
 	loginLimiter        *loginRateLimiter
 	callbackGuard       *callbackReplayGuard
+	baseURL             string
 }
 
 func (a *App) String() string {
-	return a.server.Addr
+	return a.server.Addr + " Base URL: " + a.baseURL
 }
 
 func NewApp() (*App, error) {
@@ -80,7 +81,9 @@ func NewApp() (*App, error) {
 		digitalocean.NewCreator(httpClient),
 		hetzner.NewCreator(httpClient),
 	)
-	baseURL := cmpOr(os.Getenv("SWORD_GO_BASE_URL"), "http://localhost:"+cmpOr(os.Getenv("SWORD_GO_HTTP_PORT"), "8088"))
+	ipAddress := cmpOr(os.Getenv("SWORD_GO_HTTP_IP_ADDRESS"), "0.0.0.0")
+	port := cmpOr(os.Getenv("SWORD_GO_HTTP_PORT"), "8088")
+	baseURL := cmpOr(os.Getenv("SWORD_GO_BASE_URL"), "http://localhost:"+port)
 	sitesService := sites.NewService(sitesStore, store, baseURL)
 	backupsService := backups.NewService(backupsStore, store, sitesStore)
 	integrationsService := integrations.NewService(integrationsStore)
@@ -114,12 +117,11 @@ func NewApp() (*App, error) {
 		loginLimiter:        newLoginRateLimiter(loginMaxAttempts, time.Duration(loginWindowSeconds)*time.Second),
 		callbackGuard:       newCallbackReplayGuard(10 * time.Minute),
 		auth:                auth,
+		baseURL:             baseURL,
 	}
 
-	port := cmpOr(os.Getenv("SWORD_GO_HTTP_PORT"), "8088")
-	address := ":" + port
 	app.server = &http.Server{
-		Addr:              address,
+		Addr:              ipAddress + ":" + port,
 		Handler:           app.routes(),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       20 * time.Second,
