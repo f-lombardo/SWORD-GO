@@ -12,7 +12,7 @@ manage WordPress on them.
 ## Technological stack
 
 This project creates a single Golang executable. If you start it with `go run . web` it runs a web application to
-operate the console. One of the fixed constraint of the project is that the web UI must use just [htmx](https://htmx.org/).
+operate the console. One of the fixed constraints of the project is that the web UI must use just [htmx](https://htmx.org/).
 A minimum amount of JavaScript is admitted, but only if is strictly necessary.
 
 The program can also be used as a command line tool for manually creating virtual servers on various cloud providers.

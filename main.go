@@ -7,10 +7,15 @@ import (
 	"time"
 
 	"sword-go/internal/cli"
+	"sword-go/internal/env"
 	"sword-go/internal/web"
 )
 
 func main() {
+	if err := env.Load(); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to load .env: %v\n", err)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
