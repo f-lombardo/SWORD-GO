@@ -184,7 +184,7 @@ func (c *Creator) uploadOrFindKey(publicKey string, apiKey string) (resolvedSSHK
 		}, nil
 	}
 
-	keys, err := c.listSSHKeys(c.ctx, apiKey)
+	keys, err := c.listSSHKeys(apiKey)
 	if err != nil {
 		return resolvedSSHKey{}, err
 	}
@@ -204,7 +204,7 @@ func (c *Creator) uploadOrFindKey(publicKey string, apiKey string) (resolvedSSHK
 }
 
 func (c *Creator) findKeyIDByName(name string, apiKey string) (*int, error) {
-	keys, err := c.listSSHKeys(c.ctx, apiKey)
+	keys, err := c.listSSHKeys(apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -225,8 +225,8 @@ type listedSSHKey struct {
 	PublicKey string
 }
 
-func (c *Creator) listSSHKeys(ctx context.Context, apiKey string) ([]listedSSHKey, error) {
-	res, err := c.authorizedRequest(ctx, http.MethodGet, "/account/keys", apiKey, nil)
+func (c *Creator) listSSHKeys(apiKey string) ([]listedSSHKey, error) {
+	res, err := c.authorizedRequest(c.ctx, http.MethodGet, "/account/keys", apiKey, nil)
 	if err != nil {
 		return nil, err
 	}
