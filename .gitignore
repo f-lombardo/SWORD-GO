@@ -32,4 +32,4 @@ go.work.sum
 .idea/
 .vscode/
 /sword
-/sword-go.db
+/sword-go*

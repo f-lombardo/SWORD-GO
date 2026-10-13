@@ -14,9 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/crypto/ssh"
 	"sword-go/internal/cloud/digitalocean"
 	"sword-go/internal/cloud/hetzner"
+
+	"golang.org/x/crypto/ssh"
 )
 
 type Service struct {
@@ -269,7 +270,7 @@ func (s *Service) provisionCloudServer(serverID int64, apiToken string) {
 	switch server.Provider {
 	case "digital_ocean":
 		image := cmpOr(server.Image, "ubuntu-24-04-x64")
-		result, createErr := s.doCreator.Create(ctx, digitalocean.CreateDropletData{
+		result, createErr := s.doCreator.Create(digitalocean.CreateDropletData{
 			APIKey:                   apiToken,
 			Name:                     server.Hostname,
 			ServerType:               server.ServerType,

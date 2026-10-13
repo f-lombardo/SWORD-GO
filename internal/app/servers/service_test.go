@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"testing"
 
-	_ "modernc.org/sqlite"
 	"sword-go/internal/cloud/digitalocean"
 	"sword-go/internal/cloud/hetzner"
+
+	_ "modernc.org/sqlite"
 )
 
 func newTestService(t *testing.T) *Service {
@@ -26,7 +27,7 @@ func newTestService(t *testing.T) *Service {
 
 	return NewService(
 		store,
-		digitalocean.NewCreator(nil),
+		digitalocean.NewCreator(nil, context.Background()),
 		hetzner.NewCreator(nil),
 	)
 }

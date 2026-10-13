@@ -78,7 +78,7 @@ func NewApp() (*App, error) {
 	httpClient := &http.Client{Timeout: 60 * time.Second}
 	service := servers.NewService(
 		store,
-		digitalocean.NewCreator(httpClient),
+		digitalocean.NewCreator(httpClient, ctx),
 		hetzner.NewCreator(httpClient),
 	)
 	ipAddress := cmpOr(os.Getenv("SWORD_GO_HTTP_IP_ADDRESS"), "0.0.0.0")

@@ -22,3 +22,21 @@ type DropletResult struct {
 	SSHKeyName   *string
 	SSHKeyStatus string
 }
+
+// Regions
+
+type Region struct {
+	Name      string   `json:"name"`
+	Slug      string   `json:"slug"`
+	Available bool     `json:"available"`
+	Features  []string `json:"features"`
+}
+
+type RegionsResponse struct {
+	Regions []Region `json:"regions"`
+	Links   struct {
+		Pages struct {
+			Next string `json:"next"`
+		} `json:"pages"`
+	} `json:"links"`
+}

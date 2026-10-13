@@ -78,8 +78,8 @@ func runDigitalOceanCreate(ctx context.Context, stdout io.Writer, stderr io.Writ
 
 	fmt.Fprintln(stdout, "Resolving SSH key…")
 
-	creator := digitalocean.NewCreator(http.DefaultClient)
-	result, err := creator.Create(ctx, digitalocean.CreateDropletData{
+	creator := digitalocean.NewCreator(http.DefaultClient, ctx)
+	result, err := creator.Create(digitalocean.CreateDropletData{
 		APIKey:                   apiKey,
 		Name:                     dropletName,
 		ServerType:               *serverType,
