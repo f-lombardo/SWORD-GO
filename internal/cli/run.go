@@ -57,7 +57,7 @@ func runDigitalOceanListRegions(ctx context.Context, stdout io.Writer, stderr io
 
 	key := flags.String("key", "", "The API key")
 
-	apiKey := resolveAPIKey(*key, doAPISecretPath, "DIGITALOCEAN_TOKEN", stdout, "DigitalOcean API not found in /run/secrets/do-api.", "Failed to read DigitalOcean API key from /run/secrets/do-api.")
+	apiKey := resolveAPIKey(*key, doAPISecretPath, "DIGITALOCEAN_TOKEN")
 	if strings.TrimSpace(apiKey) == "" {
 		return errors.New("an API key is required. Pass --key=<token>, provide it in /run/secrets/do-api, or set DIGITALOCEAN_TOKEN in your environment")
 	}
@@ -87,7 +87,7 @@ func runDigitalOceanCreate(ctx context.Context, stdout io.Writer, stderr io.Writ
 		return err
 	}
 
-	apiKey := resolveAPIKey(*key, doAPISecretPath, "DIGITALOCEAN_TOKEN", stdout, "DigitalOcean API not found in /run/secrets/do-api.", "Failed to read DigitalOcean API key from /run/secrets/do-api.")
+	apiKey := resolveAPIKey(*key, doAPISecretPath, "DIGITALOCEAN_TOKEN")
 	if strings.TrimSpace(apiKey) == "" {
 		return errors.New("an API key is required. Pass --key=<token>, provide it in /run/secrets/do-api, or set DIGITALOCEAN_TOKEN in your environment")
 	}
@@ -156,7 +156,7 @@ func runHetznerCreate(ctx context.Context, stdout io.Writer, stderr io.Writer, a
 		return err
 	}
 
-	apiKey := resolveAPIKey(*key, hetznerAPISecretPath, "HETZNER_TOKEN", stdout, "Hetzner API not found in /run/secrets/hetzner-api.", "Failed to read Hetzner API key from /run/secrets/hetzner-api.")
+	apiKey := resolveAPIKey(*key, hetznerAPISecretPath, "HETZNER_TOKEN")
 	if strings.TrimSpace(apiKey) == "" {
 		return errors.New("an API key is required. Pass --key=<token>, provide it in /run/secrets/hetzner-api, or set HETZNER_TOKEN in your environment")
 	}
@@ -210,12 +210,12 @@ func runHetznerCreate(ctx context.Context, stdout io.Writer, stderr io.Writer, a
 	return nil
 }
 
-func resolveAPIKey(commandLineAPIKey string, secretPath string, envName string, stdout io.Writer, notFoundMessage string, failedMessage string) string {
+func resolveAPIKey(commandLineAPIKey string, secretPath string, envName string) string {
 	if strings.TrimSpace(commandLineAPIKey) != "" {
 		return strings.TrimSpace(commandLineAPIKey)
 	}
 
-	secretFileAPIKey := readAPIKeyFromSecret(secretPath, stdout, notFoundMessage, failedMessage)
+	secretFileAPIKey := readAPIKeyFromSecret(secretPath)
 	if secretFileAPIKey != "" {
 		return secretFileAPIKey
 	}
@@ -223,16 +223,14 @@ func resolveAPIKey(commandLineAPIKey string, secretPath string, envName string, 
 	return strings.TrimSpace(os.Getenv(envName))
 }
 
-func readAPIKeyFromSecret(secretPath string, stdout io.Writer, notFoundMessage string, failedMessage string) string {
+func readAPIKeyFromSecret(secretPath string) string {
 	info, err := os.Stat(secretPath)
 	if err != nil || info.IsDir() {
-		fmt.Fprintln(stdout, notFoundMessage)
 		return ""
 	}
 
 	content, err := os.ReadFile(secretPath)
 	if err != nil {
-		fmt.Fprintln(stdout, failedMessage)
 		return ""
 	}
 

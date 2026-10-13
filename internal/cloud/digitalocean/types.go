@@ -23,6 +23,13 @@ type DropletResult struct {
 	SSHKeyStatus string
 }
 
+// Pagination links
+
+type RegionsResponse struct {
+	Regions []Region `json:"regions"`
+	Links   Links    `json:"links"`
+}
+
 // Regions
 
 type Region struct {
@@ -32,11 +39,26 @@ type Region struct {
 	Features  []string `json:"features"`
 }
 
-type RegionsResponse struct {
-	Regions []Region `json:"regions"`
-	Links   struct {
-		Pages struct {
-			Next string `json:"next"`
-		} `json:"pages"`
-	} `json:"links"`
+type Links struct {
+	Pages struct {
+		Next string `json:"next"`
+	} `json:"pages"`
+}
+
+// Sizes
+
+type Size struct {
+	Slug         string   `json:"slug"`
+	Memory       int      `json:"memory"` // MB
+	VCPUs        int      `json:"vcpus"`
+	Disk         int      `json:"disk"` // GB
+	PriceMonthly float64  `json:"price_monthly"`
+	PriceHourly  float64  `json:"price_hourly"`
+	Regions      []string `json:"regions"`
+	Available    bool     `json:"available"`
+}
+
+type SizesResponse struct {
+	Sizes []Size `json:"sizes"`
+	Links Links  `json:"links"`
 }
