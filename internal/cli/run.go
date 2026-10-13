@@ -28,12 +28,15 @@ func Run(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string)
 
 	switch args[0] {
 	case "digitalocean":
-		if args[1] != "create" {
+		switch args[1] {
+		case "create":
+			return runDigitalOceanCreate(ctx, stdout, stderr, args[2:])
+		case "regions":
+			return runDigitalOceanListRegions(ctx, stdout, stderr, args[2:])
+		default:
 			printMainUsage(stderr)
 			return fmt.Errorf("unknown subcommand: digitalocean %s", args[1])
 		}
-
-		return runDigitalOceanCreate(ctx, stdout, stderr, args[2:])
 	case "hetzner":
 		if args[1] != "create" {
 			printMainUsage(stderr)
@@ -45,6 +48,27 @@ func Run(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string)
 		printMainUsage(stderr)
 		return fmt.Errorf("unknown provider: %s", args[0])
 	}
+}
+
+func runDigitalOceanListRegions(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string) error {
+	flags := flag.NewFlagSet("digitalocean regions", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+
+	key := flags.String("key", "", "The API key")
+
+	apiKey := resolveAPIKey(*key, doAPISecretPath, "DIGITALOCEAN_TOKEN", stdout, "DigitalOcean API not found in /run/secrets/do-api.", "Failed to read DigitalOcean API key from /run/secrets/do-api.")
+	if strings.TrimSpace(apiKey) == "" {
+		return errors.New("an API key is required. Pass --key=<token>, provide it in /run/secrets/do-api, or set DIGITALOCEAN_TOKEN in your environment")
+	}
+	creator := digitalocean.NewCreator(http.DefaultClient, ctx)
+	regions, err := creator.ListAvailableRegions(apiKey)
+	if err != nil {
+		return err
+	}
+	for _, region := range regions {
+		fmt.Printf("%-8s %s\n", region.Slug, region.Name)
+	}
+	return nil
 }
 
 func runDigitalOceanCreate(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string) error {

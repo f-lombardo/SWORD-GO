@@ -355,7 +355,7 @@ func decodeResponse(response *http.Response, out any) error {
 	}
 
 	if err = json.Unmarshal(body, out); err != nil {
-		return errors.New("DigitalOcean API returned an invalid JSON response")
+		return errors.New("DigitalOcean API returned an invalid JSON response: " + err.Error())
 	}
 
 	return nil
