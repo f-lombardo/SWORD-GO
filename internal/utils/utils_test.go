@@ -1,4 +1,4 @@
-package cli
+package utils
 
 import (
 	"strings"
@@ -9,7 +9,7 @@ import (
 
 func TestRandomLowerAlphaNumeric(t *testing.T) {
 	l := 10
-	randomString := randomLowerAlphaNumeric(l)
+	randomString := RandomLowerAlphaNumeric(l)
 
 	assert.Len(t, randomString, l)
 	assert.Equal(t, strings.ToLower(randomString), randomString)

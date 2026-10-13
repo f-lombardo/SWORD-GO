@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sword-go/internal/utils"
 	"text/tabwriter"
 
 	"sword-go/internal/cloud/digitalocean"
@@ -97,7 +98,7 @@ func runDigitalOceanCreate(ctx context.Context, stdout io.Writer, stderr io.Writ
 
 	dropletName := *name
 	if strings.TrimSpace(dropletName) == "" {
-		dropletName = "droplet-" + randomLowerAlphaNumeric(8)
+		dropletName = "droplet-" + utils.RandomLowerAlphaNumeric(8)
 	}
 
 	fmt.Fprintln(stdout, "Resolving SSH key…")
@@ -166,7 +167,7 @@ func runHetznerCreate(ctx context.Context, stdout io.Writer, stderr io.Writer, a
 
 	serverName := *name
 	if strings.TrimSpace(serverName) == "" {
-		serverName = "server-" + randomLowerAlphaNumeric(8)
+		serverName = "server-" + utils.RandomLowerAlphaNumeric(8)
 	}
 
 	fmt.Fprintln(stdout, "Resolving SSH key…")

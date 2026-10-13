@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sword-go/internal/utils"
 	"time"
 
 	"sword-go/internal/app/servers"
@@ -129,7 +130,7 @@ func (a *App) publicSitesHandler(w http.ResponseWriter, r *http.Request) {
 			Server:           server,
 			CallbackURL:      callbackURL,
 			AdminUser:        cmpOr(r.URL.Query().Get("wp_admin_user"), "sword_admin"),
-			AdminPassword:    cmpOr(r.URL.Query().Get("wp_admin_password"), randomLowerAlphaNumeric(20)),
+			AdminPassword:    cmpOr(r.URL.Query().Get("wp_admin_password"), utils.RandomLowerAlphaNumeric(20)),
 			AdminEmail:       cmpOr(r.URL.Query().Get("wp_admin_email"), "admin@example.com"),
 			AdminDisplayName: cmpOr(r.URL.Query().Get("wp_admin_display_name"), "SWORD Admin"),
 		})

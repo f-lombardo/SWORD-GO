@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"cmp"
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +11,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sword-go/internal/utils"
 	"time"
 )
 
@@ -162,7 +162,7 @@ func (c *Creator) uploadOrFindKey(ctx context.Context, publicKey string, apiKey 
 		name = parts[2]
 	}
 	if name == "" {
-		name = "key-" + randomLowerAlphaNumeric(8)
+		name = "key-" + utils.RandomLowerAlphaNumeric(8)
 	}
 
 	payload := map[string]any{
@@ -368,28 +368,4 @@ func decodeResponse(response *http.Response, out any) error {
 	}
 
 	return nil
-}
-
-const randomCharset = "abcdefghijklmnopqrstuvwxyz0123456789"
-
-func randomLowerAlphaNumeric(length int) string {
-	if length <= 0 {
-		return ""
-	}
-
-	randomBytes := make([]byte, length)
-	if _, err := rand.Read(randomBytes); err != nil {
-		fallback := make([]byte, length)
-		for index := range fallback {
-			fallback[index] = randomCharset[index%len(randomCharset)]
-		}
-		return string(fallback)
-	}
-
-	out := make([]byte, length)
-	for index, value := range randomBytes {
-		out[index] = randomCharset[int(value)%len(randomCharset)]
-	}
-
-	return string(out)
 }

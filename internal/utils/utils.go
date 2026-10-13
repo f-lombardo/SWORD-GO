@@ -1,10 +1,10 @@
-package web
+package utils
 
 import "crypto/rand"
 
 const randomCharset = "abcdefghijklmnopqrstuvwxyz0123456789"
 
-func randomLowerAlphaNumeric(length int) string {
+func RandomLowerAlphaNumeric(length int) string {
 	if length <= 0 {
 		return ""
 	}
