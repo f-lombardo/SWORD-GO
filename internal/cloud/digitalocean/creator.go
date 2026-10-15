@@ -226,7 +226,7 @@ type listedSSHKey struct {
 }
 
 func (c *Creator) listSSHKeys(apiKey string) ([]listedSSHKey, error) {
-	res, err := c.authorizedRequest(c.ctx, http.MethodGet, "/account/keys", apiKey, nil)
+	res, err := c.authorizedRequest(http.MethodGet, "/account/keys", apiKey, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +265,7 @@ func (c *Creator) waitForPublicIP(dropletID int, apiKey string, attempts int, in
 		case <-time.After(time.Duration(intervalSeconds) * time.Second):
 		}
 
-		res, err := c.authorizedRequest(c.ctx, http.MethodGet, fmt.Sprintf("/droplets/%d", dropletID), apiKey, nil)
+		res, err := c.authorizedRequest(http.MethodGet, fmt.Sprintf("/droplets/%d", dropletID), apiKey, nil)
 		if err != nil {
 			lastErr = err
 			continue
@@ -309,7 +309,7 @@ func (c *Creator) authorizedJSONRequest(method string, path string, apiKey strin
 	}
 
 	headers := map[string]string{"Content-Type": "application/json"}
-	return c.authorizedRequest(c.ctx, method, path, apiKey, &requestBody{
+	return c.authorizedRequest(method, path, apiKey, &requestBody{
 		bytes:   encoded,
 		headers: headers,
 	})
@@ -320,13 +320,13 @@ type requestBody struct {
 	headers map[string]string
 }
 
-func (c *Creator) authorizedRequest(ctx context.Context, method string, path string, apiKey string, body *requestBody) (*http.Response, error) {
+func (c *Creator) authorizedRequest(method string, path string, apiKey string, body *requestBody) (*http.Response, error) {
 	var reader io.Reader
 	if body != nil {
 		reader = bytes.NewReader(body.bytes)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, apiBase+path, reader)
+	req, err := http.NewRequestWithContext(c.ctx, method, apiBase+path, reader)
 	if err != nil {
 		return nil, err
 	}
@@ -341,6 +341,23 @@ func (c *Creator) authorizedRequest(ctx context.Context, method string, path str
 	res, err := c.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
+	}
+
+	return res, nil
+}
+
+func (c *Creator) authorizedRequestWithStatusOK(method string, path string, apiKey string, body *requestBody) (*http.Response, error) {
+	res, err := c.authorizedRequest(method, path, apiKey, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		res.Body.Close()
+		return nil, fmt.Errorf(
+			"API DigitalOcean: HTTP %d",
+			res.StatusCode,
+		)
 	}
 
 	return res, nil
