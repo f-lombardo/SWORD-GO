@@ -2,6 +2,7 @@ package digitalocean
 
 import (
 	"net/http"
+	"slices"
 )
 
 func (c *Creator) ListAvailableRegions(apiKey string) ([]Region, error) {
@@ -46,4 +47,16 @@ func (c *Creator) ListSizes(apiKey string) ([]Size, error) {
 	}
 
 	return sizes, nil
+}
+
+func (region *Region) ListAvailable(sizes []Size) []Size {
+	var result []Size
+
+	for _, size := range sizes {
+		if slices.Contains(size.Regions, region.Slug) {
+			result = append(result, size)
+		}
+	}
+
+	return result
 }
