@@ -28,7 +28,7 @@ func newTestService(t *testing.T) *Service {
 	return NewService(
 		store,
 		digitalocean.NewCreator(nil, context.Background()),
-		hetzner.NewCreator(nil),
+		hetzner.NewCreator(nil, context.Background()),
 	)
 }
 

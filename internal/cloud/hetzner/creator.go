@@ -25,13 +25,15 @@ type HTTPDoer interface {
 
 type Creator struct {
 	client HTTPDoer
+	ctx    context.Context
 }
 
-func NewCreator(client HTTPDoer) *Creator {
-	return &Creator{client: client}
+func NewCreator(client HTTPDoer, ctx context.Context) *Creator {
+
+	return &Creator{client: client, ctx: ctx}
 }
 
-func (c *Creator) Create(ctx context.Context, data CreateServerData) (ServerResult, error) {
+func (c *Creator) Create(data CreateServerData) (ServerResult, error) {
 	if data.PublicIPPollAttempts < 1 {
 		return ServerResult{}, errors.New("public IP poll attempts must be greater than zero")
 	}
@@ -40,7 +42,7 @@ func (c *Creator) Create(ctx context.Context, data CreateServerData) (ServerResu
 		return ServerResult{}, errors.New("public IP poll interval must be greater than zero")
 	}
 
-	resolvedKey, err := c.resolveSSHKey(ctx, data.PublicKey, data.APIKey)
+	resolvedKey, err := c.resolveSSHKey(data.PublicKey, data.APIKey)
 	if err != nil {
 		return ServerResult{}, err
 	}
@@ -57,7 +59,7 @@ func (c *Creator) Create(ctx context.Context, data CreateServerData) (ServerResu
 		},
 	}
 
-	res, err := c.authorizedJSONRequest(ctx, http.MethodPost, "/servers", data.APIKey, payload)
+	res, err := c.authorizedJSONRequest(http.MethodPost, "/servers", data.APIKey, payload)
 	if err != nil {
 		return ServerResult{}, err
 	}
@@ -97,7 +99,7 @@ func (c *Creator) Create(ctx context.Context, data CreateServerData) (ServerResu
 		return ServerResult{}, errors.New("Hetzner API response did not include server details")
 	}
 
-	publicIP, err := c.waitForPublicIP(ctx, body.Server.ID, data.APIKey, data.PublicIPPollAttempts, data.PublicIPPollIntervalSecs)
+	publicIP, err := c.waitForPublicIP(body.Server.ID, data.APIKey, data.PublicIPPollAttempts, data.PublicIPPollIntervalSecs)
 	if err != nil {
 		return ServerResult{}, err
 	}
@@ -124,12 +126,12 @@ type resolvedSSHKey struct {
 	Status string
 }
 
-func (c *Creator) resolveSSHKey(ctx context.Context, value string, apiKey string) (resolvedSSHKey, error) {
+func (c *Creator) resolveSSHKey(value string, apiKey string) (resolvedSSHKey, error) {
 	if isRawPublicKey(value) {
-		return c.uploadOrFindKey(ctx, value, apiKey)
+		return c.uploadOrFindKey(value, apiKey)
 	}
 
-	id, err := c.findKeyIDByName(ctx, value, apiKey)
+	id, err := c.findKeyIDByName(value, apiKey)
 	if err != nil {
 		return resolvedSSHKey{}, err
 	}
@@ -154,7 +156,7 @@ func isRawPublicKey(value string) bool {
 	return rawPublicKeyPattern.MatchString(strings.ToLower(strings.TrimSpace(value)))
 }
 
-func (c *Creator) uploadOrFindKey(ctx context.Context, publicKey string, apiKey string) (resolvedSSHKey, error) {
+func (c *Creator) uploadOrFindKey(publicKey string, apiKey string) (resolvedSSHKey, error) {
 	trimmedKey := strings.TrimSpace(publicKey)
 	parts := strings.Fields(trimmedKey)
 	name := ""
@@ -170,7 +172,7 @@ func (c *Creator) uploadOrFindKey(ctx context.Context, publicKey string, apiKey 
 		"public_key": trimmedKey,
 	}
 
-	res, err := c.authorizedJSONRequest(ctx, http.MethodPost, "/ssh_keys", apiKey, payload)
+	res, err := c.authorizedJSONRequest(http.MethodPost, "/ssh_keys", apiKey, payload)
 	if err != nil {
 		return resolvedSSHKey{}, err
 	}
@@ -195,7 +197,7 @@ func (c *Creator) uploadOrFindKey(ctx context.Context, publicKey string, apiKey 
 		}, nil
 	}
 
-	keys, err := c.listSSHKeys(ctx, apiKey)
+	keys, err := c.listSSHKeys(apiKey)
 	if err != nil {
 		return resolvedSSHKey{}, err
 	}
@@ -214,8 +216,8 @@ func (c *Creator) uploadOrFindKey(ctx context.Context, publicKey string, apiKey 
 	return resolvedSSHKey{}, errors.New("could not find or upload the provided SSH key")
 }
 
-func (c *Creator) findKeyIDByName(ctx context.Context, name string, apiKey string) (*int, error) {
-	keys, err := c.listSSHKeys(ctx, apiKey)
+func (c *Creator) findKeyIDByName(name string, apiKey string) (*int, error) {
+	keys, err := c.listSSHKeys(apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -236,8 +238,8 @@ type listedSSHKey struct {
 	PublicKey string
 }
 
-func (c *Creator) listSSHKeys(ctx context.Context, apiKey string) ([]listedSSHKey, error) {
-	res, err := c.authorizedRequest(ctx, http.MethodGet, "/ssh_keys", apiKey, nil)
+func (c *Creator) listSSHKeys(apiKey string) ([]listedSSHKey, error) {
+	res, err := c.authorizedRequest(http.MethodGet, "/ssh_keys", apiKey, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -266,17 +268,17 @@ func (c *Creator) listSSHKeys(ctx context.Context, apiKey string) ([]listedSSHKe
 	return out, nil
 }
 
-func (c *Creator) waitForPublicIP(ctx context.Context, serverID int, apiKey string, attempts int, intervalSeconds int) (*string, error) {
+func (c *Creator) waitForPublicIP(serverID int, apiKey string, attempts int, intervalSeconds int) (*string, error) {
 	var lastErr error
 
 	for attempt := 0; attempt < attempts; attempt++ {
 		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
+		case <-c.ctx.Done():
+			return nil, c.ctx.Err()
 		case <-time.After(time.Duration(intervalSeconds) * time.Second):
 		}
 
-		res, err := c.authorizedRequest(ctx, http.MethodGet, fmt.Sprintf("/servers/%d", serverID), apiKey, nil)
+		res, err := c.authorizedRequest(http.MethodGet, fmt.Sprintf("/servers/%d", serverID), apiKey, nil)
 		if err != nil {
 			lastErr = err
 			continue
@@ -310,14 +312,14 @@ func (c *Creator) waitForPublicIP(ctx context.Context, serverID int, apiKey stri
 	return nil, nil
 }
 
-func (c *Creator) authorizedJSONRequest(ctx context.Context, method string, path string, apiKey string, payload map[string]any) (*http.Response, error) {
+func (c *Creator) authorizedJSONRequest(method string, path string, apiKey string, payload map[string]any) (*http.Response, error) {
 	encoded, err := json.Marshal(payload)
 	if err != nil {
 		return nil, errors.New("failed to encode the Hetzner API request payload")
 	}
 
 	headers := map[string]string{"Content-Type": "application/json"}
-	return c.authorizedRequest(ctx, method, path, apiKey, &requestBody{
+	return c.authorizedRequest(method, path, apiKey, &requestBody{
 		bytes:   encoded,
 		headers: headers,
 	})
@@ -328,13 +330,13 @@ type requestBody struct {
 	headers map[string]string
 }
 
-func (c *Creator) authorizedRequest(ctx context.Context, method string, path string, apiKey string, body *requestBody) (*http.Response, error) {
+func (c *Creator) authorizedRequest(method string, path string, apiKey string, body *requestBody) (*http.Response, error) {
 	var reader io.Reader
 	if body != nil {
 		reader = bytes.NewReader(body.bytes)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, apiBase+path, reader)
+	req, err := http.NewRequestWithContext(c.ctx, method, apiBase+path, reader)
 	if err != nil {
 		return nil, err
 	}

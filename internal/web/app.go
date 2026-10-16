@@ -79,7 +79,7 @@ func NewApp() (*App, error) {
 	service := servers.NewService(
 		store,
 		digitalocean.NewCreator(httpClient, ctx),
-		hetzner.NewCreator(httpClient),
+		hetzner.NewCreator(httpClient, ctx),
 	)
 	ipAddress := cmpOr(os.Getenv("SWORD_GO_HTTP_IP_ADDRESS"), "0.0.0.0")
 	port := cmpOr(os.Getenv("SWORD_GO_HTTP_PORT"), "8088")

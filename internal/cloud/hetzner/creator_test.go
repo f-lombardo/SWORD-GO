@@ -37,8 +37,8 @@ func TestCreatorUploadsRawSSHKeyAndReturnsServerDetails(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client)
-	result, err := creator.Create(context.Background(), CreateServerData{
+	creator := NewCreator(client, context.Background())
+	result, err := creator.Create(CreateServerData{
 		APIKey:                   "test-token",
 		Name:                     "sword-web",
 		Location:                 "nbg1",
@@ -90,8 +90,8 @@ func TestCreatorResolvesExistingSSHKeyByName(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client)
-	result, err := creator.Create(context.Background(), CreateServerData{
+	creator := NewCreator(client, context.Background())
+	result, err := creator.Create(CreateServerData{
 		APIKey:                   "test-token",
 		Name:                     "sword-app",
 		Location:                 "hel1",

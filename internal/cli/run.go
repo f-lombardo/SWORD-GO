@@ -182,8 +182,8 @@ func runHetznerCreate(ctx context.Context, stdout io.Writer, stderr io.Writer, a
 
 	fmt.Fprintln(stdout, "Resolving SSH key…")
 
-	creator := hetzner.NewCreator(http.DefaultClient)
-	result, err := creator.Create(ctx, hetzner.CreateServerData{
+	creator := hetzner.NewCreator(http.DefaultClient, ctx)
+	result, err := creator.Create(hetzner.CreateServerData{
 		APIKey:                   apiKey,
 		Name:                     serverName,
 		ServerType:               *serverType,

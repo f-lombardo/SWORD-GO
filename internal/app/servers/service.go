@@ -292,7 +292,7 @@ func (s *Service) provisionCloudServer(serverID int64, apiToken string) {
 		publicIP = *result.PublicIP
 	case "hetzner":
 		image := cmpOr(server.Image, "ubuntu-24.04")
-		result, createErr := s.hetznerCreator.Create(ctx, hetzner.CreateServerData{
+		result, createErr := s.hetznerCreator.Create(hetzner.CreateServerData{
 			APIKey:                   apiToken,
 			Name:                     server.Hostname,
 			ServerType:               server.ServerType,
