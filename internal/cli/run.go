@@ -66,8 +66,18 @@ func runDigitalOceanListRegions(ctx context.Context, stdout io.Writer, stderr io
 	if err != nil {
 		return err
 	}
+
+	sizes, err := creator.ListSizes(apiKey)
+	if err != nil {
+		return err
+	}
+
 	for _, region := range regions {
 		fmt.Printf("%-8s %s\n", region.Slug, region.Name)
+		availableSizes := region.ListAvailable(sizes)
+		for _, size := range availableSizes {
+			fmt.Printf("\t%s\n", size.String())
+		}
 	}
 	return nil
 }

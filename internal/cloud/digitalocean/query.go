@@ -1,6 +1,7 @@
 package digitalocean
 
 import (
+	"fmt"
 	"net/http"
 	"slices"
 )
@@ -59,4 +60,8 @@ func (region *Region) ListAvailable(sizes []Size) []Size {
 	}
 
 	return result
+}
+
+func (size *Size) String() string {
+	return fmt.Sprintf("Name: %s, Memory %d MB, VCPUs: %d, Disk %d GB", size.Slug, size.Memory, size.VCPUs, size.Disk)
 }
