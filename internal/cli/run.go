@@ -22,6 +22,10 @@ const (
 )
 
 func Run(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string) error {
+	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help" || args[0] == "help") {
+		printMainUsage(stdout)
+		return nil
+	}
 	if len(args) < 2 {
 		printMainUsage(stderr)
 		return errors.New("missing command")
@@ -34,6 +38,9 @@ func Run(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string)
 			return runDigitalOceanCreate(ctx, stdout, stderr, args[2:])
 		case "regions":
 			return runDigitalOceanListRegions(ctx, stdout, stderr, args[2:])
+		case "-h", "--help", "help":
+			printMainUsage(stdout)
+			return nil
 		default:
 			printMainUsage(stderr)
 			return fmt.Errorf("unknown subcommand: digitalocean %s", args[1])
@@ -44,6 +51,9 @@ func Run(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string)
 			return runHetznerCreate(ctx, stdout, stderr, args[2:])
 		case "regions":
 			return runHetznerListRegions(ctx, stdout, stderr, args[2:])
+		case "-h", "--help", "help":
+			printMainUsage(stdout)
+			return nil
 		default:
 			printMainUsage(stderr)
 			return fmt.Errorf("unknown subcommand: hetzner %s", args[1])
@@ -56,9 +66,20 @@ func Run(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string)
 
 func runDigitalOceanListRegions(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string) error {
 	flags := flag.NewFlagSet("digitalocean regions", flag.ContinueOnError)
-	flags.SetOutput(io.Discard)
+	flags.SetOutput(stderr)
+	flags.Usage = func() {
+		fmt.Fprintln(stderr, "Usage:")
+		fmt.Fprintln(stderr, "  sword-go digitalocean regions [--key=TOKEN]")
+	}
 
 	key := flags.String("key", "", "The API key")
+
+	if err := flags.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
+		return err
+	}
 
 	apiKey, err := resolveAPIKey(*key, doAPISecretPath, "DIGITALOCEAN_TOKEN")
 	if err != nil {
@@ -77,10 +98,10 @@ func runDigitalOceanListRegions(ctx context.Context, stdout io.Writer, stderr io
 	}
 
 	for _, region := range regions {
-		fmt.Printf("%-8s %s\n", region.Slug, region.Name)
+		fmt.Fprintf(stdout, "%-8s %s\n", region.Slug, region.Name)
 		availableSizes := region.ListAvailable(sizes)
 		for _, size := range availableSizes {
-			fmt.Printf("\t%s\n", size.String())
+			fmt.Fprintf(stdout, "\t%s\n", size.String())
 		}
 	}
 	return nil
@@ -88,7 +109,11 @@ func runDigitalOceanListRegions(ctx context.Context, stdout io.Writer, stderr io
 
 func runDigitalOceanCreate(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string) error {
 	flags := flag.NewFlagSet("digitalocean create", flag.ContinueOnError)
-	flags.SetOutput(io.Discard)
+	flags.SetOutput(stderr)
+	flags.Usage = func() {
+		fmt.Fprintln(stderr, "Usage:")
+		fmt.Fprintln(stderr, "  sword-go digitalocean create [--key=TOKEN] [--name=NAME] [--region=nyc1] [--type=s-1vcpu-1gb] [--image=ubuntu-24-04-x64] --public-key=<name|key>")
+	}
 
 	key := flags.String("key", "", "The API key")
 	name := flags.String("name", "", "The droplet name")
@@ -98,6 +123,9 @@ func runDigitalOceanCreate(ctx context.Context, stdout io.Writer, stderr io.Writ
 	publicKey := flags.String("public-key", "", "Name of an existing DigitalOcean SSH key, or a raw public key")
 
 	if err := flags.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
 		return err
 	}
 
@@ -157,7 +185,11 @@ func runDigitalOceanCreate(ctx context.Context, stdout io.Writer, stderr io.Writ
 
 func runHetznerCreate(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string) error {
 	flags := flag.NewFlagSet("hetzner create", flag.ContinueOnError)
-	flags.SetOutput(io.Discard)
+	flags.SetOutput(stderr)
+	flags.Usage = func() {
+		fmt.Fprintln(stderr, "Usage:")
+		fmt.Fprintln(stderr, "  sword-go hetzner create [--key=TOKEN] [--name=NAME] [--location=nbg1] [--type=cx23] [--image=ubuntu-24.04] --public-key=<name|key>")
+	}
 
 	key := flags.String("key", "", "The API key")
 	name := flags.String("name", "", "The server name")
@@ -167,6 +199,9 @@ func runHetznerCreate(ctx context.Context, stdout io.Writer, stderr io.Writer, a
 	publicKey := flags.String("public-key", "", "Name of an existing Hetzner SSH key, or a raw public key")
 
 	if err := flags.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
 		return err
 	}
 
@@ -226,9 +261,20 @@ func runHetznerCreate(ctx context.Context, stdout io.Writer, stderr io.Writer, a
 
 func runHetznerListRegions(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string) error {
 	flags := flag.NewFlagSet("hetzner regions", flag.ContinueOnError)
-	flags.SetOutput(io.Discard)
+	flags.SetOutput(stderr)
+	flags.Usage = func() {
+		fmt.Fprintln(stderr, "Usage:")
+		fmt.Fprintln(stderr, "  sword-go hetzner regions [--key=TOKEN]")
+	}
 
 	key := flags.String("key", "", "The API key")
+
+	if err := flags.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
+		return err
+	}
 
 	apiKey, err := resolveAPIKey(*key, hetznerAPISecretPath, "HETZNER_TOKEN")
 	if err != nil {
@@ -246,10 +292,10 @@ func runHetznerListRegions(ctx context.Context, stdout io.Writer, stderr io.Writ
 	}
 
 	for _, region := range regions {
-		fmt.Printf("%-8d %s\n", region.ID, region.Name)
+		fmt.Fprintf(stdout, "%-4s %s %s\n", region.Name, region.Description, region.Country)
 		availableServerTypes := region.ListAvailable(serverTypes)
 		for _, size := range availableServerTypes {
-			fmt.Printf("\t%s\n", size.String())
+			fmt.Fprintf(stdout, "\t%s\n", size.String())
 		}
 	}
 	return nil
@@ -290,6 +336,8 @@ func readAPIKeyFromSecret(secretPath string) string {
 func printMainUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "Usage:")
 	_, _ = fmt.Fprintln(w, "  sword-go digitalocean create [--key=TOKEN] [--name=NAME] [--region=nyc1] [--type=s-1vcpu-1gb] [--image=ubuntu-24-04-x64] --public-key=<name|key>")
+	_, _ = fmt.Fprintln(w, "  sword-go digitalocean regions [--key=TOKEN]")
 	_, _ = fmt.Fprintln(w, "  sword-go hetzner create [--key=TOKEN] [--name=NAME] [--location=nbg1] [--type=cx23] [--image=ubuntu-24.04] --public-key=<name|key>")
+	_, _ = fmt.Fprintln(w, "  sword-go hetzner regions [--key=TOKEN]")
 	_, _ = fmt.Fprintln(w, "  sword-go web")
 }

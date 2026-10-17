@@ -49,18 +49,36 @@ curl -fsS http://127.0.0.1:8088/healthz
 # Web UI (default admin: admin@example.com / password)
 go run . web
 
-# DigitalOcean
+# DigitalOcean - Create a droplet
 go run . digitalocean create \
   --key=<token> \
   --public-key="ssh-ed25519 AAAA..."
 
-# Hetzner
+# DigitalOcean - List available regions and sizes
+go run . digitalocean regions [--key=<token>]
+
+# Hetzner - Create a server
 go run . hetzner create \
   --key=<token> \
   --public-key="ssh-ed25519 AAAA..."
+
+# Hetzner - List available locations and server types
+go run . hetzner regions [--key=<token>]
 ```
 
-This is the API key resolution order::
+### Command-line Interface
+
+#### DigitalOcean
+
+- `digitalocean create [--key=TOKEN] [--name=NAME] [--region=nyc1] [--type=s-1vcpu-1gb] [--image=ubuntu-24-04-x64] --public-key=<name|key>`: Provisions a new droplet.
+- `digitalocean regions [--key=TOKEN]`: Lists all available DigitalOcean regions and the droplet sizes supported in each region.
+
+#### Hetzner
+
+- `hetzner create [--key=TOKEN] [--name=NAME] [--location=nbg1] [--type=cx23] [--image=ubuntu-24.04] --public-key=<name|key>`: Provisions a new cloud server.
+- `hetzner regions [--key=TOKEN]`: Lists all available Hetzner locations (datacenters) and the server types supported in each location.
+
+This is the API key resolution order:
 
 1. `--key`
 2. Secret file (`/run/secrets/do_api_key` or `/run/secrets/hetzner_api_key`)
