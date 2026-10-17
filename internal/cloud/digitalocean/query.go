@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+	"sword-go/internal/utils"
 )
 
 func (c *Creator) ListAvailableRegions(apiKey string) ([]Region, error) {
@@ -13,7 +14,7 @@ func (c *Creator) ListAvailableRegions(apiKey string) ([]Region, error) {
 	}
 
 	var result RegionsResponse
-	if err = decodeResponse(res, &result); err != nil {
+	if err = utils.DecodeResponse(res, &result); err != nil {
 		return nil, err
 	}
 
@@ -30,13 +31,13 @@ func (c *Creator) ListAvailableRegions(apiKey string) ([]Region, error) {
 
 func (c *Creator) ListSizes(apiKey string) ([]Size, error) {
 
-	res, err := c.authorizedRequest(http.MethodGet, "/sizes?per_page=200", apiKey, nil)
+	res, err := c.authorizedRequestWithStatusOK(http.MethodGet, "/sizes?per_page=200", apiKey, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	var result SizesResponse
-	if err = decodeResponse(res, &result); err != nil {
+	if err = utils.DecodeResponse(res, &result); err != nil {
 		return nil, err
 	}
 	var sizes []Size

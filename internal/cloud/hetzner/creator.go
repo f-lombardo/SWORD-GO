@@ -29,7 +29,6 @@ type Creator struct {
 }
 
 func NewCreator(client HTTPDoer, ctx context.Context) *Creator {
-
 	return &Creator{client: client, ctx: ctx}
 }
 
@@ -85,7 +84,7 @@ func (c *Creator) Create(data CreateServerData) (ServerResult, error) {
 		} `json:"server"`
 	}
 
-	if err = decodeResponse(res, &body); err != nil {
+	if err = utils.DecodeResponse(res, &body); err != nil {
 		return ServerResult{}, err
 	}
 
@@ -184,7 +183,7 @@ func (c *Creator) uploadOrFindKey(publicKey string, apiKey string) (resolvedSSHK
 		} `json:"ssh_key"`
 	}
 
-	if err = decodeResponse(res, &body); err != nil {
+	if err = utils.DecodeResponse(res, &body); err != nil {
 		return resolvedSSHKey{}, err
 	}
 
@@ -252,7 +251,7 @@ func (c *Creator) listSSHKeys(apiKey string) ([]listedSSHKey, error) {
 		} `json:"ssh_keys"`
 	}
 
-	if err = decodeResponse(res, &body); err != nil {
+	if err = utils.DecodeResponse(res, &body); err != nil {
 		return nil, err
 	}
 
@@ -294,7 +293,7 @@ func (c *Creator) waitForPublicIP(serverID int, apiKey string, attempts int, int
 			} `json:"server"`
 		}
 
-		if err = decodeResponse(res, &body); err != nil {
+		if err = utils.DecodeResponse(res, &body); err != nil {
 			lastErr = err
 			continue
 		}
@@ -357,17 +356,19 @@ func (c *Creator) authorizedRequest(method string, path string, apiKey string, b
 	return res, nil
 }
 
-func decodeResponse(response *http.Response, out any) error {
-	defer response.Body.Close()
-
-	body, err := io.ReadAll(response.Body)
+func (c *Creator) authorizedRequestWithStatusOK(method string, path string, apiKey string, body *requestBody) (*http.Response, error) {
+	res, err := c.authorizedRequest(method, path, apiKey, body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if err = json.Unmarshal(body, out); err != nil {
-		return errors.New("Hetzner API returned an invalid JSON response")
+	if res.StatusCode != http.StatusOK {
+		res.Body.Close()
+		return nil, fmt.Errorf(
+			"API Hetzner: HTTP %d",
+			res.StatusCode,
+		)
 	}
 
-	return nil
+	return res, nil
 }

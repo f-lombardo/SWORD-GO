@@ -72,7 +72,7 @@ func (c *Creator) Create(data CreateDropletData) (DropletResult, error) {
 		} `json:"droplet"`
 	}
 
-	if err = decodeResponse(res, &body); err != nil {
+	if err = utils.DecodeResponse(res, &body); err != nil {
 		return DropletResult{}, err
 	}
 
@@ -171,7 +171,7 @@ func (c *Creator) uploadOrFindKey(publicKey string, apiKey string) (resolvedSSHK
 		} `json:"ssh_key"`
 	}
 
-	if err = decodeResponse(res, &body); err != nil {
+	if err = utils.DecodeResponse(res, &body); err != nil {
 		return resolvedSSHKey{}, err
 	}
 
@@ -239,7 +239,7 @@ func (c *Creator) listSSHKeys(apiKey string) ([]listedSSHKey, error) {
 		} `json:"ssh_keys"`
 	}
 
-	if err = decodeResponse(res, &body); err != nil {
+	if err = utils.DecodeResponse(res, &body); err != nil {
 		return nil, err
 	}
 
@@ -282,7 +282,7 @@ func (c *Creator) waitForPublicIP(dropletID int, apiKey string, attempts int, in
 			} `json:"droplet"`
 		}
 
-		if err = decodeResponse(res, &body); err != nil {
+		if err = utils.DecodeResponse(res, &body); err != nil {
 			lastErr = err
 			continue
 		}
@@ -361,19 +361,4 @@ func (c *Creator) authorizedRequestWithStatusOK(method string, path string, apiK
 	}
 
 	return res, nil
-}
-
-func decodeResponse(response *http.Response, out any) error {
-	defer response.Body.Close()
-
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return err
-	}
-
-	if err = json.Unmarshal(body, out); err != nil {
-		return errors.New("DigitalOcean API returned an invalid JSON response: " + err.Error())
-	}
-
-	return nil
 }
