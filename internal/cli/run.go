@@ -246,7 +246,7 @@ func runHetznerListRegions(ctx context.Context, stdout io.Writer, stderr io.Writ
 	}
 
 	for _, region := range regions {
-		fmt.Printf("%-8s %s\n", region.ID, region.Name)
+		fmt.Printf("%-8d %s\n", region.ID, region.Name)
 		availableServerTypes := region.ListAvailable(serverTypes)
 		for _, size := range availableServerTypes {
 			fmt.Printf("\t%s\n", size.String())
@@ -266,7 +266,7 @@ func resolveAPIKey(commandLineAPIKey string, secretPath string, envName string) 
 	}
 
 	envApiKey := strings.TrimSpace(os.Getenv(envName))
-	if envApiKey == "" {
+	if envApiKey != "" {
 		return envApiKey, nil
 	}
 
