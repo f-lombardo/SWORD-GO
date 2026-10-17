@@ -19,6 +19,7 @@ func (a *App) routes() http.Handler {
 	}
 
 	mux.Handle("/servers", protected(a.serversIndexCreateHandler))
+	mux.Handle("/servers/options", protected(a.serverOptionsHandler))
 	mux.Handle("/servers/", protected(a.serversDetailHandler))
 	mux.Handle("/servers/generate-name", protected(a.generateNameHandler))
 	mux.Handle("/sites", protected(a.sitesIndexCreateHandler))

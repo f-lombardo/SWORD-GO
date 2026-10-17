@@ -33,24 +33,33 @@
     <section class="card shadow-sm mb-4">
         <div class="card-body">
         <h2 class="h5 mb-3">Create server</h2>
-        <form method="post" action="/servers" class="row g-3">
+        <form method="post" action="/servers" class="row g-3" autocomplete="off">
             <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
             <div class="col-md-6"><label class="form-label">Name <input class="form-control" name="name" required></label></div>
             <div class="col-md-6"><label class="form-label">Hostname <input class="form-control" name="hostname" required></label></div>
             <div class="col-md-4"><label class="form-label">Timezone <input class="form-control" name="timezone" value="UTC" required></label></div>
             <div class="col-md-4"><label class="form-label">SSH Port <input class="form-control" name="ssh_port" type="number" min="1" max="65535" value="22" required></label></div>
             <div class="col-md-4"><label class="form-label">Provider
-                <select class="form-select" name="provider">
+                <select class="form-select" name="provider" id="provider" hx-post="/servers/options" hx-trigger="change" hx-include="closest form" hx-target="#server-options" hx-swap="outerHTML">
                     <option value="">custom</option>
                     <option value="digital_ocean">digital_ocean</option>
                     <option value="hetzner">hetzner</option>
                 </select>
             </label></div>
-            <div class="col-md-4"><label class="form-label">Server type <input class="form-control" name="server_type" placeholder="s-1vcpu-1gb or cx23"></label></div>
-            <div class="col-md-4"><label class="form-label">Region/location <input class="form-control" name="region" placeholder="nyc1 or nbg1"></label></div>
-            <div class="col-md-4"><label class="form-label">Image <input class="form-control" name="image"></label></div>
-            <div class="col-md-6"><label class="form-label">IP Address (custom servers) <input class="form-control" name="ip_address"></label></div>
-            <div class="col-md-6"><label class="form-label">Provider API token (not persisted) <input class="form-control" name="api_token" type="password"></label></div>
+            <div class="col-md-4"><label class="form-label">Provider integration
+                <select class="form-select" name="integration_id" id="integration_id" hx-post="/servers/options" hx-trigger="change" hx-include="closest form" hx-target="#server-options" hx-swap="outerHTML">
+                    <option value="">Use the first matching integration</option>
+                    {{ range .Integrations }}
+                    <option value="{{ .ID }}">{{ .Provider }}: {{ .Name }}</option>
+                    {{ end }}
+                </select>
+            </label></div>
+            <div class="col-md-4"><label class="form-label">Region/location <input class="form-control" name="region" id="region" list="region-options" placeholder="nyc1 or nbg1" hx-post="/servers/options" hx-trigger="change" hx-include="closest form" hx-target="#server-options" hx-swap="outerHTML"></label></div>
+            <div class="col-md-4"><label class="form-label">Server type <input class="form-control" name="server_type" list="server-type-options" placeholder="s-1vcpu-1gb or cx23"></label></div>
+            <div class="col-md-4"><label class="form-label">Image <input class="form-control" name="image" list="image-options"></label></div>
+            <div class="col-md-6"><label class="form-label">IP Address (custom servers) <input class="form-control" name="ip_address" autocomplete="off"></label></div>
+            <div class="col-md-6"><label class="form-label">Provider API token (optional, not persisted) <input class="form-control" name="api_token" id="api_token" type="password" autocomplete="new-password" hx-post="/servers/options" hx-trigger="change" hx-include="closest form" hx-target="#server-options" hx-swap="outerHTML"></label></div>
+            <div id="server-options"><datalist id="region-options"></datalist><datalist id="server-type-options"></datalist><datalist id="image-options"></datalist></div>
             <div class="col-12"><button class="btn btn-primary" type="submit">Create</button></div>
         </form>
         </div>
