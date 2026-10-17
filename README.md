@@ -57,6 +57,9 @@ go run . digitalocean create \
 # DigitalOcean - List available regions and sizes
 go run . digitalocean regions [--key=<token>]
 
+# DigitalOcean - List available distribution images
+go run . digitalocean images [--key=<token>]
+
 # Hetzner - Create a server
 go run . hetzner create \
   --key=<token> \
@@ -64,6 +67,9 @@ go run . hetzner create \
 
 # Hetzner - List available locations and server types
 go run . hetzner regions [--key=<token>]
+
+# Hetzner - List available system images
+go run . hetzner images [--key=<token>]
 ```
 
 ### Command-line Interface
@@ -72,11 +78,13 @@ go run . hetzner regions [--key=<token>]
 
 - `digitalocean create [--key=TOKEN] [--name=NAME] [--region=nyc1] [--type=s-1vcpu-1gb] [--image=ubuntu-24-04-x64] --public-key=<name|key>`: Provisions a new droplet.
 - `digitalocean regions [--key=TOKEN]`: Lists all available DigitalOcean regions and the droplet sizes supported in each region.
+- `digitalocean images [--key=TOKEN]`: Lists all available DigitalOcean distribution images (slugs, distributions, and names).
 
 #### Hetzner
 
 - `hetzner create [--key=TOKEN] [--name=NAME] [--location=nbg1] [--type=cx23] [--image=ubuntu-24.04] --public-key=<name|key>`: Provisions a new cloud server.
 - `hetzner regions [--key=TOKEN]`: Lists all available Hetzner locations (datacenters) and the server types supported in each location.
+- `hetzner images [--key=TOKEN]`: Lists all available Hetzner Cloud system images (names, architectures, and descriptions).
 
 This is the API key resolution order:
 

@@ -179,3 +179,99 @@ func TestServerTypeString(t *testing.T) {
 		t.Fatalf("expected %q, got %q", expected, got)
 	}
 }
+
+func TestCreatorListAvailableImages(t *testing.T) {
+	ubuntuName := "ubuntu-24.04"
+	debianName := "debian-12"
+
+	client := &queueHTTPClient{
+		responses: []*http.Response{
+			jsonResponse(http.StatusOK, `{
+				"images": [
+					{
+						"id": 1,
+						"type": "system",
+						"status": "available",
+						"name": "ubuntu-24.04",
+						"description": "Ubuntu 24.04",
+						"architecture": "x86"
+					},
+					{
+						"id": 2,
+						"type": "system",
+						"status": "deprecated",
+						"name": "retired-os",
+						"description": "Retired OS",
+						"architecture": "x86"
+					},
+					{
+						"id": 3,
+						"type": "system",
+						"status": "available",
+						"name": "debian-12",
+						"description": "Debian 12",
+						"architecture": "arm"
+					}
+				]
+			}`),
+		},
+	}
+
+	creator := NewCreator(client, context.Background())
+	images, err := creator.ListAvailableImages("test-token")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(images) != 2 {
+		t.Fatalf("expected 2 available images, got %d", len(images))
+	}
+
+	if images[0].Name == nil || *images[0].Name != ubuntuName {
+		t.Fatalf("expected first image %s, got %#v", ubuntuName, images[0].Name)
+	}
+	if images[1].Name == nil || *images[1].Name != debianName {
+		t.Fatalf("expected second image %s, got %#v", debianName, images[1].Name)
+	}
+
+	if len(client.requests) != 1 {
+		t.Fatalf("expected 1 request, got %d", len(client.requests))
+	}
+
+	if got := client.requests[0].URL.String(); got != "https://api.hetzner.cloud/v1/images?type=system&per_page=100" {
+		t.Fatalf("unexpected request URL: %s", got)
+	}
+}
+
+func TestCreatorListAvailableImagesHTTPError(t *testing.T) {
+	client := &queueHTTPClient{
+		responses: []*http.Response{
+			jsonResponse(http.StatusUnauthorized, `{"error":{"message":"unauthorized"}}`),
+		},
+	}
+
+	creator := NewCreator(client, context.Background())
+	_, err := creator.ListAvailableImages("bad-token")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	expectedErr := "API Hetzner: HTTP 401"
+	if err.Error() != expectedErr {
+		t.Fatalf("expected error %q, got %q", expectedErr, err.Error())
+	}
+}
+
+func TestImageString(t *testing.T) {
+	name := "ubuntu-24.04"
+	img := Image{
+		Name:         &name,
+		Architecture: "x86",
+		Description:  "Ubuntu 24.04",
+	}
+
+	expected := "Name: ubuntu-24.04, Architecture: x86, Description: Ubuntu 24.04"
+	if got := img.String(); got != expected {
+		t.Fatalf("expected %q, got %q", expected, got)
+	}
+}

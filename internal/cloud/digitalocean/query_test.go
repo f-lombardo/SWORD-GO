@@ -220,3 +220,93 @@ func TestSizeString(t *testing.T) {
 		t.Fatalf("expected %q, got %q", expected, got)
 	}
 }
+
+func TestCreatorListAvailableImages(t *testing.T) {
+	client := &queueHTTPClient{
+		responses: []*http.Response{
+			jsonResponse(http.StatusOK, `{
+				"images": [
+					{
+						"id": 101,
+						"name": "24.04 (LTS) x64",
+						"distribution": "Ubuntu",
+						"slug": "ubuntu-24-04-x64",
+						"status": "available",
+						"public": true
+					},
+					{
+						"id": 102,
+						"name": "Retired OS",
+						"distribution": "Other",
+						"slug": "retired-os",
+						"status": "retired",
+						"public": false
+					},
+					{
+						"id": 103,
+						"name": "12 x64",
+						"distribution": "Debian",
+						"slug": "debian-12-x64",
+						"status": "available",
+						"public": true
+					}
+				]
+			}`),
+		},
+	}
+
+	creator := NewCreator(client, context.Background())
+	images, err := creator.ListAvailableImages("test-token")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(images) != 2 {
+		t.Fatalf("expected 2 available images, got %d", len(images))
+	}
+
+	if images[0].Slug != "ubuntu-24-04-x64" || images[1].Slug != "debian-12-x64" {
+		t.Fatalf("unexpected image slugs: %s, %s", images[0].Slug, images[1].Slug)
+	}
+
+	if len(client.requests) != 1 {
+		t.Fatalf("expected 1 request, got %d", len(client.requests))
+	}
+
+	if got := client.requests[0].URL.String(); got != "https://api.digitalocean.com/v2/images?type=distribution&per_page=200" {
+		t.Fatalf("unexpected request URL: %s", got)
+	}
+}
+
+func TestCreatorListAvailableImagesHTTPError(t *testing.T) {
+	client := &queueHTTPClient{
+		responses: []*http.Response{
+			jsonResponse(http.StatusUnauthorized, `{"message":"Unauthorized"}`),
+		},
+	}
+
+	creator := NewCreator(client, context.Background())
+	_, err := creator.ListAvailableImages("bad-token")
+	if err == nil {
+		t.Fatal("expected error on 401, got nil")
+	}
+
+	expectedErr := "API DigitalOcean: HTTP 401"
+	if err.Error() != expectedErr {
+		t.Fatalf("expected error %q, got %q", expectedErr, err.Error())
+	}
+}
+
+func TestImageString(t *testing.T) {
+	img := Image{
+		ID:           101,
+		Slug:         "ubuntu-24-04-x64",
+		Distribution: "Ubuntu",
+		Name:         "24.04 (LTS) x64",
+	}
+
+	expected := "Slug: ubuntu-24-04-x64, Distribution: Ubuntu, Name: 24.04 (LTS) x64"
+	if got := img.String(); got != expected {
+		t.Fatalf("expected %q, got %q", expected, got)
+	}
+}

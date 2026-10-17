@@ -67,3 +67,20 @@ type ServerTypesResponse struct {
 	ServerTypes []ServerType `json:"server_types"`
 	Meta        Meta         `json:"meta"`
 }
+
+type Image struct {
+	ID           int     `json:"id"`
+	Type         string  `json:"type"`
+	Status       string  `json:"status"`
+	Name         *string `json:"name"`
+	Description  string  `json:"description"`
+	OSFlavor     string  `json:"os_flavor"`
+	OSVersion    string  `json:"os_version"`
+	Architecture string  `json:"architecture"`
+	Deprecated   *string `json:"deprecated"`
+}
+
+type ImagesResponse struct {
+	Images []Image `json:"images"`
+	Meta   Meta    `json:"meta"`
+}

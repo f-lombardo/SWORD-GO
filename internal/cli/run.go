@@ -38,6 +38,8 @@ func Run(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string)
 			return runDigitalOceanCreate(ctx, stdout, stderr, args[2:])
 		case "regions":
 			return runDigitalOceanListRegions(ctx, stdout, stderr, args[2:])
+		case "images":
+			return runDigitalOceanListImages(ctx, stdout, stderr, args[2:])
 		case "-h", "--help", "help":
 			printMainUsage(stdout)
 			return nil
@@ -51,6 +53,8 @@ func Run(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string)
 			return runHetznerCreate(ctx, stdout, stderr, args[2:])
 		case "regions":
 			return runHetznerListRegions(ctx, stdout, stderr, args[2:])
+		case "images":
+			return runHetznerListImages(ctx, stdout, stderr, args[2:])
 		case "-h", "--help", "help":
 			printMainUsage(stdout)
 			return nil
@@ -105,6 +109,46 @@ func runDigitalOceanListRegions(ctx context.Context, stdout io.Writer, stderr io
 		}
 	}
 	return nil
+}
+
+func runDigitalOceanListImages(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string) error {
+	flags := flag.NewFlagSet("digitalocean images", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	flags.Usage = func() {
+		fmt.Fprintln(stderr, "Usage:")
+		fmt.Fprintln(stderr, "  sword-go digitalocean images [--key=TOKEN]")
+	}
+
+	key := flags.String("key", "", "The API key")
+
+	if err := flags.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
+		return err
+	}
+
+	apiKey, err := resolveAPIKey(*key, doAPISecretPath, "DIGITALOCEAN_TOKEN")
+	if err != nil {
+		return err
+	}
+
+	creator := digitalocean.NewCreator(http.DefaultClient, ctx)
+	images, err := creator.ListAvailableImages(apiKey)
+	if err != nil {
+		return err
+	}
+
+	table := tabwriter.NewWriter(stdout, 0, 4, 2, ' ', 0)
+	_, _ = fmt.Fprintln(table, "SLUG\tDISTRIBUTION\tNAME")
+	for _, img := range images {
+		slug := img.Slug
+		if slug == "" {
+			slug = fmt.Sprintf("%d", img.ID)
+		}
+		_, _ = fmt.Fprintf(table, "%s\t%s\t%s\n", slug, img.Distribution, img.Name)
+	}
+	return table.Flush()
 }
 
 func runDigitalOceanCreate(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string) error {
@@ -301,6 +345,53 @@ func runHetznerListRegions(ctx context.Context, stdout io.Writer, stderr io.Writ
 	return nil
 }
 
+func runHetznerListImages(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string) error {
+	flags := flag.NewFlagSet("hetzner images", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	flags.Usage = func() {
+		fmt.Fprintln(stderr, "Usage:")
+		fmt.Fprintln(stderr, "  sword-go hetzner images [--key=TOKEN]")
+	}
+
+	key := flags.String("key", "", "The API key")
+
+	if err := flags.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
+		return err
+	}
+
+	apiKey, err := resolveAPIKey(*key, hetznerAPISecretPath, "HETZNER_TOKEN")
+	if err != nil {
+		return err
+	}
+
+	creator := hetzner.NewCreator(http.DefaultClient, ctx)
+	images, err := creator.ListAvailableImages(apiKey)
+	if err != nil {
+		return err
+	}
+
+	table := tabwriter.NewWriter(stdout, 0, 4, 2, ' ', 0)
+	_, _ = fmt.Fprintln(table, "NAME\tARCH\tDESCRIPTION")
+	for _, img := range images {
+		name := ""
+		if img.Name != nil {
+			name = *img.Name
+		}
+		if name == "" {
+			name = fmt.Sprintf("%d", img.ID)
+		}
+		arch := img.Architecture
+		if arch == "" {
+			arch = "-"
+		}
+		_, _ = fmt.Fprintf(table, "%s\t%s\t%s\n", name, arch, img.Description)
+	}
+	return table.Flush()
+}
+
 func resolveAPIKey(commandLineAPIKey string, secretPath string, envName string) (string, error) {
 	if strings.TrimSpace(commandLineAPIKey) != "" {
 		return strings.TrimSpace(commandLineAPIKey), nil
@@ -337,7 +428,9 @@ func printMainUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "Usage:")
 	_, _ = fmt.Fprintln(w, "  sword-go digitalocean create [--key=TOKEN] [--name=NAME] [--region=nyc1] [--type=s-1vcpu-1gb] [--image=ubuntu-24-04-x64] --public-key=<name|key>")
 	_, _ = fmt.Fprintln(w, "  sword-go digitalocean regions [--key=TOKEN]")
+	_, _ = fmt.Fprintln(w, "  sword-go digitalocean images [--key=TOKEN]")
 	_, _ = fmt.Fprintln(w, "  sword-go hetzner create [--key=TOKEN] [--name=NAME] [--location=nbg1] [--type=cx23] [--image=ubuntu-24.04] --public-key=<name|key>")
 	_, _ = fmt.Fprintln(w, "  sword-go hetzner regions [--key=TOKEN]")
+	_, _ = fmt.Fprintln(w, "  sword-go hetzner images [--key=TOKEN]")
 	_, _ = fmt.Fprintln(w, "  sword-go web")
 }

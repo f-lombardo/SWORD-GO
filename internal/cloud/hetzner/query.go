@@ -62,3 +62,39 @@ func (location *Location) ListAvailable(serverTypes []ServerType) []ServerType {
 func (st *ServerType) String() string {
 	return fmt.Sprintf("Name: %s, Memory %g GB, VCPUs: %d, Disk %d GB", st.Name, st.Memory, st.Cores, st.Disk)
 }
+
+// ListAvailableImages returns all available system images.
+func (c *Creator) ListAvailableImages(apiKey string) ([]Image, error) {
+	res, err := c.authorizedRequestWithStatusOK(http.MethodGet, "/images?type=system&per_page=100", apiKey, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result ImagesResponse
+	if err = cloud.DecodeResponse(res, &result); err != nil {
+		return nil, err
+	}
+
+	var images []Image
+	for _, img := range result.Images {
+		if img.Status == "available" {
+			images = append(images, img)
+		}
+	}
+
+	return images, nil
+}
+
+func (img *Image) String() string {
+	name := ""
+	if img.Name != nil {
+		name = *img.Name
+	}
+	if name == "" {
+		name = fmt.Sprintf("%d", img.ID)
+	}
+	if img.Architecture != "" {
+		return fmt.Sprintf("Name: %s, Architecture: %s, Description: %s", name, img.Architecture, img.Description)
+	}
+	return fmt.Sprintf("Name: %s, Description: %s", name, img.Description)
+}

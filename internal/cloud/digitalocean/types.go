@@ -47,3 +47,22 @@ type SizesResponse struct {
 	Sizes []Size `json:"sizes"`
 	Links Links  `json:"links"`
 }
+
+// Images
+
+type Image struct {
+	ID           int      `json:"id"`
+	Name         string   `json:"name"`
+	Type         string   `json:"type"`
+	Distribution string   `json:"distribution"`
+	Slug         string   `json:"slug"`
+	Public       bool     `json:"public"`
+	Regions      []string `json:"regions"`
+	Status       string   `json:"status"`
+	Description  string   `json:"description"`
+}
+
+type ImagesResponse struct {
+	Images []Image `json:"images"`
+	Links  Links   `json:"links"`
+}
