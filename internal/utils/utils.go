@@ -2,10 +2,7 @@ package utils
 
 import (
 	"crypto/rand"
-	"encoding/json"
-	"errors"
-	"io"
-	"net/http"
+	"time"
 )
 
 const randomCharset = "abcdefghijklmnopqrstuvwxyz0123456789"
@@ -32,17 +29,6 @@ func RandomLowerAlphaNumeric(length int) string {
 	return string(out)
 }
 
-func DecodeResponse(response *http.Response, out any) error {
-	defer response.Body.Close()
-
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return err
-	}
-
-	if err = json.Unmarshal(body, out); err != nil {
-		return errors.New("Hetzner API returned an invalid JSON response")
-	}
-
-	return nil
+func SecondsFrom(at time.Time) int64 {
+	return int64(time.Since(at).Seconds())
 }

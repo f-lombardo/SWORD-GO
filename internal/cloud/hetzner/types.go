@@ -1,27 +1,12 @@
 package hetzner
 
-type CreateServerData struct {
-	APIKey                   string
-	Name                     string
-	ServerType               string
-	Location                 string
-	Image                    string
-	PublicKey                string
-	PublicIPPollAttempts     int
-	PublicIPPollIntervalSecs int
-}
+import "sword-go/internal/cloud"
 
-type ServerResult struct {
-	ServerID     int
-	Name         string
-	Location     string
-	ServerType   string
-	Status       string
-	PublicIP     *string
-	SSHKeyID     any
-	SSHKeyName   *string
-	SSHKeyStatus string
-}
+// CreateServerData aliases the unified cloud.CreateServerData.
+type CreateServerData = cloud.CreateServerData
+
+// ServerResult aliases the unified cloud.ServerResult.
+type ServerResult = cloud.ServerResult
 
 //
 

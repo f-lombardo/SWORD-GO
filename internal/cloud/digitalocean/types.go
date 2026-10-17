@@ -1,27 +1,12 @@
 package digitalocean
 
-type CreateDropletData struct {
-	APIKey                   string
-	Name                     string
-	ServerType               string
-	Region                   string
-	Image                    string
-	PublicKey                string
-	PublicIPPollAttempts     int
-	PublicIPPollIntervalSecs int
-}
+import "sword-go/internal/cloud"
 
-type DropletResult struct {
-	DropletID    int
-	Name         string
-	Region       string
-	Type         string
-	Status       string
-	PublicIP     *string
-	SSHKeyID     any
-	SSHKeyName   *string
-	SSHKeyStatus string
-}
+// CreateDropletData aliases the unified cloud.CreateServerData.
+type CreateDropletData = cloud.CreateServerData
+
+// DropletResult aliases the unified cloud.ServerResult.
+type DropletResult = cloud.ServerResult
 
 // Pagination links
 

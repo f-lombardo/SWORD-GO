@@ -7,11 +7,13 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sword-go/internal/utils"
 	"time"
 
-	"golang.org/x/crypto/ssh"
 	"sword-go/internal/app/servers"
 	"sword-go/internal/app/sites"
+
+	"golang.org/x/crypto/ssh"
 )
 
 type Service struct {
@@ -264,10 +266,7 @@ func (s *Service) executeSchedule(schedule Schedule) {
 
 		executionResult, executionErr := s.siteExecutor.ExecuteSiteBackup(ctx, schedule, destination, server, site)
 
-		duration := int64(time.Since(startedAt).Seconds())
-		if duration < 1 {
-			duration = 1
-		}
+		duration := max(utils.SecondsFrom(startedAt), 1)
 		run.DurationSeconds = &duration
 		completedAt := time.Now().UTC()
 		run.CompletedAt = &completedAt

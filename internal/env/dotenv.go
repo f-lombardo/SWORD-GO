@@ -55,8 +55,8 @@ func Parse(r io.Reader) (map[string]string, error) {
 		}
 
 		// Support "export KEY=VALUE" syntax
-		if strings.HasPrefix(line, "export ") {
-			line = strings.TrimSpace(strings.TrimPrefix(line, "export "))
+		if after, ok := strings.CutPrefix(line, "export "); ok {
+			line = strings.TrimSpace(after)
 		}
 
 		parts := strings.SplitN(line, "=", 2)

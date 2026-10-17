@@ -16,6 +16,7 @@ import (
 	"sword-go/internal/app/integrations"
 	"sword-go/internal/app/servers"
 	"sword-go/internal/app/sites"
+	"sword-go/internal/cloud"
 	"sword-go/internal/cloud/digitalocean"
 	"sword-go/internal/cloud/hetzner"
 
@@ -76,11 +77,10 @@ func NewApp() (*App, error) {
 	}
 
 	httpClient := &http.Client{Timeout: 60 * time.Second}
-	service := servers.NewService(
-		store,
-		digitalocean.NewCreator(httpClient, ctx),
-		hetzner.NewCreator(httpClient, ctx),
-	)
+	service := servers.NewService(store, map[string]cloud.ServerCreator{
+		"digital_ocean": digitalocean.NewCreator(httpClient, context.Background()),
+		"hetzner":       hetzner.NewCreator(httpClient, context.Background()),
+	})
 	ipAddress := cmpOr(os.Getenv("SWORD_GO_HTTP_IP_ADDRESS"), "0.0.0.0")
 	port := cmpOr(os.Getenv("SWORD_GO_HTTP_PORT"), "8088")
 	baseURL := cmpOr(os.Getenv("SWORD_GO_BASE_URL"), "http://localhost:"+port)

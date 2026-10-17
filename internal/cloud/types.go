@@ -1,0 +1,55 @@
+package cloud
+
+import (
+	"context"
+	"net/http"
+)
+
+// HTTPDoer abstracts executing HTTP requests.
+type HTTPDoer interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+// CreateServerData holds the common input required to provision a cloud server.
+type CreateServerData struct {
+	APIKey                   string
+	Name                     string
+	ServerType               string
+	Region                   string
+	Location                 string // Alias for Region used by providers like Hetzner
+	Image                    string
+	PublicKey                string
+	PublicIPPollAttempts     int
+	PublicIPPollIntervalSecs int
+}
+
+// RegionOrLocation returns Region if specified, otherwise Location.
+func (d CreateServerData) RegionOrLocation() string {
+	if d.Region != "" {
+		return d.Region
+	}
+	return d.Location
+}
+
+// ServerResult standardizes the creation output across cloud providers.
+type ServerResult struct {
+	ID           int
+	DropletID    int // Backward-compatibility alias for DigitalOcean
+	ServerID     int // Backward-compatibility alias for Hetzner
+	Name         string
+	Region       string
+	Location     string // Backward-compatibility alias for Hetzner
+	Type         string // Backward-compatibility alias for DigitalOcean
+	ServerType   string
+	Status       string
+	PublicIP     *string
+	SSHKeyID     any
+	SSHKeyName   *string
+	SSHKeyStatus string
+}
+
+// ServerCreator represents any provider capable of provisioning a cloud server.
+type ServerCreator interface {
+	Create(data CreateServerData) (ServerResult, error)
+	CreateWithContext(ctx context.Context, data CreateServerData) (ServerResult, error)
+}

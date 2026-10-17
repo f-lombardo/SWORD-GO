@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
-	"sword-go/internal/utils"
+	"sword-go/internal/cloud"
 )
 
 func (c *Creator) ListAvailableRegions(apiKey string) ([]Region, error) {
@@ -14,7 +14,7 @@ func (c *Creator) ListAvailableRegions(apiKey string) ([]Region, error) {
 	}
 
 	var result RegionsResponse
-	if err = utils.DecodeResponse(res, &result); err != nil {
+	if err = cloud.DecodeResponse(res, &result); err != nil {
 		return nil, err
 	}
 
@@ -37,7 +37,7 @@ func (c *Creator) ListSizes(apiKey string) ([]Size, error) {
 	}
 
 	var result SizesResponse
-	if err = utils.DecodeResponse(res, &result); err != nil {
+	if err = cloud.DecodeResponse(res, &result); err != nil {
 		return nil, err
 	}
 	var sizes []Size

@@ -1,38 +1,44 @@
 package hetzner
 
 import (
-	"bytes"
 	"cmp"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
-	"regexp"
-	"strings"
-	"sword-go/internal/utils"
 	"time"
+
+	"sword-go/internal/cloud"
 )
 
 const apiBase = "https://api.hetzner.cloud/v1"
 
-var rawPublicKeyPattern = regexp.MustCompile(`^(ssh-|ecdsa-|sk-ssh-)`)
-
-type HTTPDoer interface {
-	Do(req *http.Request) (*http.Response, error)
-}
+type HTTPDoer = cloud.HTTPDoer
 
 type Creator struct {
-	client HTTPDoer
-	ctx    context.Context
+	client  *cloud.Client
+	sshKeys *cloud.SSHKeyService
+	ctx     context.Context
 }
 
 func NewCreator(client HTTPDoer, ctx context.Context) *Creator {
-	return &Creator{client: client, ctx: ctx}
+	cloudClient := cloud.NewClient(apiBase, client)
+	return &Creator{
+		client:  cloudClient,
+		sshKeys: cloud.NewSSHKeyService(cloudClient, "/ssh_keys"),
+		ctx:     ctx,
+	}
 }
 
 func (c *Creator) Create(data CreateServerData) (ServerResult, error) {
+	ctx := c.ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return c.CreateWithContext(ctx, data)
+}
+
+func (c *Creator) CreateWithContext(ctx context.Context, data CreateServerData) (ServerResult, error) {
 	if data.PublicIPPollAttempts < 1 {
 		return ServerResult{}, errors.New("public IP poll attempts must be greater than zero")
 	}
@@ -41,14 +47,16 @@ func (c *Creator) Create(data CreateServerData) (ServerResult, error) {
 		return ServerResult{}, errors.New("public IP poll interval must be greater than zero")
 	}
 
-	resolvedKey, err := c.resolveSSHKey(data.PublicKey, data.APIKey)
+	location := data.RegionOrLocation()
+
+	resolvedKey, err := c.sshKeys.Resolve(ctx, data.PublicKey, data.APIKey)
 	if err != nil {
 		return ServerResult{}, err
 	}
 
 	payload := map[string]any{
 		"name":        data.Name,
-		"location":    data.Location,
+		"location":    location,
 		"server_type": data.ServerType,
 		"image":       data.Image,
 		"ssh_keys":    []any{resolvedKey.ID},
@@ -58,7 +66,7 @@ func (c *Creator) Create(data CreateServerData) (ServerResult, error) {
 		},
 	}
 
-	res, err := c.authorizedJSONRequest(http.MethodPost, "/servers", data.APIKey, payload)
+	res, err := c.client.JSONRequest(ctx, http.MethodPost, "/servers", data.APIKey, payload)
 	if err != nil {
 		return ServerResult{}, err
 	}
@@ -84,7 +92,7 @@ func (c *Creator) Create(data CreateServerData) (ServerResult, error) {
 		} `json:"server"`
 	}
 
-	if err = utils.DecodeResponse(res, &body); err != nil {
+	if err = cloud.DecodeResponse(res, &body); err != nil {
 		return ServerResult{}, err
 	}
 
@@ -98,18 +106,22 @@ func (c *Creator) Create(data CreateServerData) (ServerResult, error) {
 		return ServerResult{}, errors.New("Hetzner API response did not include server details")
 	}
 
-	publicIP, err := c.waitForPublicIP(body.Server.ID, data.APIKey, data.PublicIPPollAttempts, data.PublicIPPollIntervalSecs)
+	publicIP, err := c.waitForPublicIP(ctx, body.Server.ID, data.APIKey, data.PublicIPPollAttempts, data.PublicIPPollIntervalSecs)
 	if err != nil {
 		return ServerResult{}, err
 	}
 
-	location := cmp.Or(body.Server.DC.Location.Name, body.Server.DC.Location.Description, data.Location)
+	finalLocation := cmp.Or(body.Server.DC.Location.Name, body.Server.DC.Location.Description, location)
 	serverType := cmp.Or(body.Server.ServerType.Name, data.ServerType)
 
 	return ServerResult{
+		ID:           body.Server.ID,
+		DropletID:    body.Server.ID,
 		ServerID:     body.Server.ID,
 		Name:         body.Server.Name,
-		Location:     location,
+		Region:       finalLocation,
+		Location:     finalLocation,
+		Type:         serverType,
 		ServerType:   serverType,
 		Status:       body.Server.Status,
 		PublicIP:     publicIP,
@@ -119,168 +131,11 @@ func (c *Creator) Create(data CreateServerData) (ServerResult, error) {
 	}, nil
 }
 
-type resolvedSSHKey struct {
-	ID     any
-	Name   *string
-	Status string
-}
-
-func (c *Creator) resolveSSHKey(value string, apiKey string) (resolvedSSHKey, error) {
-	if isRawPublicKey(value) {
-		return c.uploadOrFindKey(value, apiKey)
-	}
-
-	id, err := c.findKeyIDByName(value, apiKey)
-	if err != nil {
-		return resolvedSSHKey{}, err
-	}
-
-	if id != nil {
-		existingName := value
-		return resolvedSSHKey{
-			ID:     *id,
-			Name:   &existingName,
-			Status: "existing",
-		}, nil
-	}
-
-	return resolvedSSHKey{
-		ID:     value,
-		Name:   nil,
-		Status: "provided",
-	}, nil
-}
-
-func isRawPublicKey(value string) bool {
-	return rawPublicKeyPattern.MatchString(strings.ToLower(strings.TrimSpace(value)))
-}
-
-func (c *Creator) uploadOrFindKey(publicKey string, apiKey string) (resolvedSSHKey, error) {
-	trimmedKey := strings.TrimSpace(publicKey)
-	parts := strings.Fields(trimmedKey)
-	name := ""
-	if len(parts) >= 3 {
-		name = parts[2]
-	}
-	if name == "" {
-		name = "key-" + utils.RandomLowerAlphaNumeric(8)
-	}
-
-	payload := map[string]any{
-		"name":       name,
-		"public_key": trimmedKey,
-	}
-
-	res, err := c.authorizedJSONRequest(http.MethodPost, "/ssh_keys", apiKey, payload)
-	if err != nil {
-		return resolvedSSHKey{}, err
-	}
-
-	var body struct {
-		SSHKey struct {
-			ID   int    `json:"id"`
-			Name string `json:"name"`
-		} `json:"ssh_key"`
-	}
-
-	if err = utils.DecodeResponse(res, &body); err != nil {
-		return resolvedSSHKey{}, err
-	}
-
-	if res.StatusCode == http.StatusCreated {
-		uploadedName := body.SSHKey.Name
-		return resolvedSSHKey{
-			ID:     body.SSHKey.ID,
-			Name:   &uploadedName,
-			Status: "uploaded",
-		}, nil
-	}
-
-	keys, err := c.listSSHKeys(apiKey)
-	if err != nil {
-		return resolvedSSHKey{}, err
-	}
-
-	for _, key := range keys {
-		if strings.TrimSpace(key.PublicKey) == trimmedKey {
-			existingName := key.Name
-			return resolvedSSHKey{
-				ID:     key.ID,
-				Name:   &existingName,
-				Status: "existing",
-			}, nil
-		}
-	}
-
-	return resolvedSSHKey{}, errors.New("could not find or upload the provided SSH key")
-}
-
-func (c *Creator) findKeyIDByName(name string, apiKey string) (*int, error) {
-	keys, err := c.listSSHKeys(apiKey)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, key := range keys {
-		if key.Name == name {
-			found := key.ID
-			return &found, nil
-		}
-	}
-
-	return nil, nil
-}
-
-type listedSSHKey struct {
-	ID        int
-	Name      string
-	PublicKey string
-}
-
-func (c *Creator) listSSHKeys(apiKey string) ([]listedSSHKey, error) {
-	res, err := c.authorizedRequest(http.MethodGet, "/ssh_keys", apiKey, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var body struct {
-		SSHKeys []struct {
-			ID        int    `json:"id"`
-			Name      string `json:"name"`
-			PublicKey string `json:"public_key"`
-		} `json:"ssh_keys"`
-	}
-
-	if err = utils.DecodeResponse(res, &body); err != nil {
-		return nil, err
-	}
-
-	out := make([]listedSSHKey, 0, len(body.SSHKeys))
-	for _, key := range body.SSHKeys {
-		out = append(out, listedSSHKey{
-			ID:        key.ID,
-			Name:      key.Name,
-			PublicKey: key.PublicKey,
-		})
-	}
-
-	return out, nil
-}
-
-func (c *Creator) waitForPublicIP(serverID int, apiKey string, attempts int, intervalSeconds int) (*string, error) {
-	var lastErr error
-
-	for attempt := 0; attempt < attempts; attempt++ {
-		select {
-		case <-c.ctx.Done():
-			return nil, c.ctx.Err()
-		case <-time.After(time.Duration(intervalSeconds) * time.Second):
-		}
-
-		res, err := c.authorizedRequest(http.MethodGet, fmt.Sprintf("/servers/%d", serverID), apiKey, nil)
+func (c *Creator) waitForPublicIP(ctx context.Context, serverID int, apiKey string, attempts int, intervalSeconds int) (*string, error) {
+	ip, err := cloud.WaitFor(ctx, attempts, time.Duration(intervalSeconds)*time.Second, func() (*string, error) {
+		res, err := c.client.Request(ctx, http.MethodGet, fmt.Sprintf("/servers/%d", serverID), apiKey, nil, nil)
 		if err != nil {
-			lastErr = err
-			continue
+			return nil, err
 		}
 
 		var body struct {
@@ -293,82 +148,29 @@ func (c *Creator) waitForPublicIP(serverID int, apiKey string, attempts int, int
 			} `json:"server"`
 		}
 
-		if err = utils.DecodeResponse(res, &body); err != nil {
-			lastErr = err
-			continue
+		if err = cloud.DecodeResponse(res, &body); err != nil {
+			return nil, err
 		}
 
 		if body.Server.PublicNet.IPv4.IP != "" {
 			publicIP := body.Server.PublicNet.IPv4.IP
 			return &publicIP, nil
 		}
-	}
 
-	if lastErr != nil {
-		return nil, fmt.Errorf("failed while waiting for the server public IP: %w", lastErr)
-	}
-
-	return nil, nil
-}
-
-func (c *Creator) authorizedJSONRequest(method string, path string, apiKey string, payload map[string]any) (*http.Response, error) {
-	encoded, err := json.Marshal(payload)
-	if err != nil {
-		return nil, errors.New("failed to encode the Hetzner API request payload")
-	}
-
-	headers := map[string]string{"Content-Type": "application/json"}
-	return c.authorizedRequest(method, path, apiKey, &requestBody{
-		bytes:   encoded,
-		headers: headers,
+		return nil, nil
 	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed while waiting for the server public IP: %w", err)
+	}
+
+	return ip, nil
 }
 
-type requestBody struct {
-	bytes   []byte
-	headers map[string]string
-}
-
-func (c *Creator) authorizedRequest(method string, path string, apiKey string, body *requestBody) (*http.Response, error) {
-	var reader io.Reader
-	if body != nil {
-		reader = bytes.NewReader(body.bytes)
+func (c *Creator) authorizedRequestWithStatusOK(method string, path string, apiKey string, _ any) (*http.Response, error) {
+	ctx := c.ctx
+	if ctx == nil {
+		ctx = context.Background()
 	}
-
-	req, err := http.NewRequestWithContext(c.ctx, method, apiBase+path, reader)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-	req.Header.Set("Content-Type", "application/json")
-	if body != nil {
-		for key, value := range body.headers {
-			req.Header.Set(key, value)
-		}
-	}
-
-	res, err := c.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("HTTP request failed: %w", err)
-	}
-
-	return res, nil
-}
-
-func (c *Creator) authorizedRequestWithStatusOK(method string, path string, apiKey string, body *requestBody) (*http.Response, error) {
-	res, err := c.authorizedRequest(method, path, apiKey, body)
-	if err != nil {
-		return nil, err
-	}
-
-	if res.StatusCode != http.StatusOK {
-		res.Body.Close()
-		return nil, fmt.Errorf(
-			"API Hetzner: HTTP %d",
-			res.StatusCode,
-		)
-	}
-
-	return res, nil
+	return c.client.RequestWithStatusOK(ctx, method, path, apiKey, "Hetzner")
 }

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"testing"
 
+	"sword-go/internal/cloud"
 	"sword-go/internal/cloud/digitalocean"
 	"sword-go/internal/cloud/hetzner"
 
@@ -25,11 +26,10 @@ func newTestService(t *testing.T) *Service {
 		t.Fatalf("ensure schema: %v", err)
 	}
 
-	return NewService(
-		store,
-		digitalocean.NewCreator(nil, context.Background()),
-		hetzner.NewCreator(nil, context.Background()),
-	)
+	return NewService(store, map[string]cloud.ServerCreator{
+		"digital_ocean": digitalocean.NewCreator(nil, context.Background()),
+		"hetzner":       hetzner.NewCreator(nil, context.Background()),
+	})
 }
 
 func TestCreateServerCustomRequiresIPAddress(t *testing.T) {

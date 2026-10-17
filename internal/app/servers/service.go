@@ -14,23 +14,20 @@ import (
 	"strings"
 	"time"
 
-	"sword-go/internal/cloud/digitalocean"
-	"sword-go/internal/cloud/hetzner"
+	"sword-go/internal/cloud"
 
 	"golang.org/x/crypto/ssh"
 )
 
 type Service struct {
-	store          *Store
-	doCreator      *digitalocean.Creator
-	hetznerCreator *hetzner.Creator
+	store    *Store
+	creators map[string]cloud.ServerCreator
 }
 
-func NewService(store *Store, doCreator *digitalocean.Creator, hetznerCreator *hetzner.Creator) *Service {
+func NewService(store *Store, creators map[string]cloud.ServerCreator) *Service {
 	return &Service{
-		store:          store,
-		doCreator:      doCreator,
-		hetznerCreator: hetznerCreator,
+		store:    store,
+		creators: creators,
 	}
 }
 
@@ -266,58 +263,39 @@ func (s *Service) provisionCloudServer(serverID int64, apiToken string) {
 	})
 	_ = s.store.Update(ctx, server)
 
-	var publicIP string
-	switch server.Provider {
-	case "digital_ocean":
-		image := cmpOr(server.Image, "ubuntu-24-04-x64")
-		result, createErr := s.doCreator.Create(digitalocean.CreateDropletData{
-			APIKey:                   apiToken,
-			Name:                     server.Hostname,
-			ServerType:               server.ServerType,
-			Region:                   server.Region,
-			Image:                    image,
-			PublicKey:                strings.TrimSpace(server.SSHPublicKey),
-			PublicIPPollAttempts:     30,
-			PublicIPPollIntervalSecs: 5,
-		})
-		if createErr != nil {
-			s.failProvision(ctx, server, createErr)
-			return
-		}
-
-		if result.PublicIP == nil {
-			s.failProvision(ctx, server, errors.New("DigitalOcean droplet created but no public IP was assigned"))
-			return
-		}
-		publicIP = *result.PublicIP
-	case "hetzner":
-		image := cmpOr(server.Image, "ubuntu-24.04")
-		result, createErr := s.hetznerCreator.Create(hetzner.CreateServerData{
-			APIKey:                   apiToken,
-			Name:                     server.Hostname,
-			ServerType:               server.ServerType,
-			Location:                 server.Region,
-			Image:                    image,
-			PublicKey:                strings.TrimSpace(server.SSHPublicKey),
-			PublicIPPollAttempts:     30,
-			PublicIPPollIntervalSecs: 5,
-		})
-		if createErr != nil {
-			s.failProvision(ctx, server, createErr)
-			return
-		}
-
-		if result.PublicIP == nil {
-			s.failProvision(ctx, server, errors.New("Hetzner server created but no public IP was assigned"))
-			return
-		}
-		publicIP = *result.PublicIP
-	default:
+	creator, ok := s.creators[server.Provider]
+	if !ok {
 		s.failProvision(ctx, server, fmt.Errorf("unsupported provider: %s", server.Provider))
 		return
 	}
 
-	server.IPAddress = publicIP
+	defaultImage := "ubuntu-24.04"
+	if server.Provider == "digital_ocean" {
+		defaultImage = "ubuntu-24-04-x64"
+	}
+	image := cmpOr(server.Image, defaultImage)
+
+	result, createErr := creator.CreateWithContext(ctx, cloud.CreateServerData{
+		APIKey:                   apiToken,
+		Name:                     server.Hostname,
+		ServerType:               server.ServerType,
+		Region:                   server.Region,
+		Image:                    image,
+		PublicKey:                strings.TrimSpace(server.SSHPublicKey),
+		PublicIPPollAttempts:     30,
+		PublicIPPollIntervalSecs: 5,
+	})
+	if createErr != nil {
+		s.failProvision(ctx, server, createErr)
+		return
+	}
+
+	if result.PublicIP == nil {
+		s.failProvision(ctx, server, fmt.Errorf("%s server created but no public IP was assigned", server.Provider))
+		return
+	}
+
+	server.IPAddress = *result.PublicIP
 	server.CurrentStep = "cloud_server_created"
 	server.ProvisionLog = append(server.ProvisionLog, ProvisionLogEntry{
 		Step:      "cloud_server_created",

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
-	"sword-go/internal/utils"
+	"sword-go/internal/cloud"
 )
 
 // ListAvailableLocations returns all available locations in Hetzner Cloud.
@@ -15,7 +15,7 @@ func (c *Creator) ListAvailableLocations(apiKey string) ([]Location, error) {
 	}
 
 	var result LocationsResponse
-	if err = utils.DecodeResponse(res, &result); err != nil {
+	if err = cloud.DecodeResponse(res, &result); err != nil {
 		return nil, err
 	}
 
@@ -30,7 +30,7 @@ func (c *Creator) ListServerTypes(apiKey string) ([]ServerType, error) {
 	}
 
 	var result ServerTypesResponse
-	if err = utils.DecodeResponse(res, &result); err != nil {
+	if err = cloud.DecodeResponse(res, &result); err != nil {
 		return nil, err
 	}
 
