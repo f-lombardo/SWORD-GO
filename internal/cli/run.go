@@ -39,12 +39,15 @@ func Run(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string)
 			return fmt.Errorf("unknown subcommand: digitalocean %s", args[1])
 		}
 	case "hetzner":
-		if args[1] != "create" {
+		switch args[1] {
+		case "create":
+			return runHetznerCreate(ctx, stdout, stderr, args[2:])
+		case "regions":
+			return runHetznerListRegions(ctx, stdout, stderr, args[2:])
+		default:
 			printMainUsage(stderr)
 			return fmt.Errorf("unknown subcommand: hetzner %s", args[1])
 		}
-
-		return runHetznerCreate(ctx, stdout, stderr, args[2:])
 	default:
 		printMainUsage(stderr)
 		return fmt.Errorf("unknown provider: %s", args[0])
@@ -57,10 +60,11 @@ func runDigitalOceanListRegions(ctx context.Context, stdout io.Writer, stderr io
 
 	key := flags.String("key", "", "The API key")
 
-	apiKey := resolveAPIKey(*key, doAPISecretPath, "DIGITALOCEAN_TOKEN")
-	if strings.TrimSpace(apiKey) == "" {
-		return errors.New("an API key is required. Pass --key=<token>, provide it in /run/secrets/do-api, or set DIGITALOCEAN_TOKEN in your environment")
+	apiKey, err := resolveAPIKey(*key, doAPISecretPath, "DIGITALOCEAN_TOKEN")
+	if err != nil {
+		return err
 	}
+
 	creator := digitalocean.NewCreator(http.DefaultClient, ctx)
 	regions, err := creator.ListAvailableRegions(apiKey)
 	if err != nil {
@@ -97,9 +101,9 @@ func runDigitalOceanCreate(ctx context.Context, stdout io.Writer, stderr io.Writ
 		return err
 	}
 
-	apiKey := resolveAPIKey(*key, doAPISecretPath, "DIGITALOCEAN_TOKEN")
-	if strings.TrimSpace(apiKey) == "" {
-		return errors.New("an API key is required. Pass --key=<token>, provide it in /run/secrets/do-api, or set DIGITALOCEAN_TOKEN in your environment")
+	apiKey, err := resolveAPIKey(*key, doAPISecretPath, "DIGITALOCEAN_TOKEN")
+	if err != nil {
+		return err
 	}
 
 	if strings.TrimSpace(*publicKey) == "" {
@@ -166,9 +170,9 @@ func runHetznerCreate(ctx context.Context, stdout io.Writer, stderr io.Writer, a
 		return err
 	}
 
-	apiKey := resolveAPIKey(*key, hetznerAPISecretPath, "HETZNER_TOKEN")
-	if strings.TrimSpace(apiKey) == "" {
-		return errors.New("an API key is required. Pass --key=<token>, provide it in /run/secrets/hetzner-api, or set HETZNER_TOKEN in your environment")
+	apiKey, err := resolveAPIKey(*key, hetznerAPISecretPath, "HETZNER_TOKEN")
+	if err != nil {
+		return err
 	}
 
 	if strings.TrimSpace(*publicKey) == "" {
@@ -220,17 +224,53 @@ func runHetznerCreate(ctx context.Context, stdout io.Writer, stderr io.Writer, a
 	return nil
 }
 
-func resolveAPIKey(commandLineAPIKey string, secretPath string, envName string) string {
+func runHetznerListRegions(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string) error {
+	flags := flag.NewFlagSet("hetzner regions", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+
+	key := flags.String("key", "", "The API key")
+
+	apiKey, err := resolveAPIKey(*key, hetznerAPISecretPath, "HETZNER_TOKEN")
+	if err != nil {
+		return err
+	}
+	creator := hetzner.NewCreator(http.DefaultClient, ctx)
+	regions, err := creator.ListAvailableLocations(apiKey)
+	if err != nil {
+		return err
+	}
+
+	serverTypes, err := creator.ListServerTypes(apiKey)
+	if err != nil {
+		return err
+	}
+
+	for _, region := range regions {
+		fmt.Printf("%-8s %s\n", region.ID, region.Name)
+		availableServerTypes := region.ListAvailable(serverTypes)
+		for _, size := range availableServerTypes {
+			fmt.Printf("\t%s\n", size.String())
+		}
+	}
+	return nil
+}
+
+func resolveAPIKey(commandLineAPIKey string, secretPath string, envName string) (string, error) {
 	if strings.TrimSpace(commandLineAPIKey) != "" {
-		return strings.TrimSpace(commandLineAPIKey)
+		return strings.TrimSpace(commandLineAPIKey), nil
 	}
 
 	secretFileAPIKey := readAPIKeyFromSecret(secretPath)
 	if secretFileAPIKey != "" {
-		return secretFileAPIKey
+		return secretFileAPIKey, nil
 	}
 
-	return strings.TrimSpace(os.Getenv(envName))
+	envApiKey := strings.TrimSpace(os.Getenv(envName))
+	if envApiKey == "" {
+		return envApiKey, nil
+	}
+
+	return "", fmt.Errorf("an API key is required. Pass --key=<token>, provide it in %s, or set %s in your environment", secretPath, envName)
 }
 
 func readAPIKeyFromSecret(secretPath string) string {
