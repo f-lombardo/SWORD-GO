@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+	"strings"
 	"sword-go/internal/cloud"
 )
 
@@ -124,6 +125,18 @@ func (region *Region) ListAvailable(sizes []Size) []Size {
 
 func (size *Size) String() string {
 	return fmt.Sprintf("Name: %s, Memory %d MB, VCPUs: %d, Disk %d GB", size.Slug, size.Memory, size.VCPUs, size.Disk)
+}
+
+func (size *Size) ProcessorType() string {
+	if strings.HasSuffix(size.Slug, "amd") {
+		return "AMD"
+	}
+
+	if strings.HasSuffix(size.Slug, "intel") {
+		return "INTEL"
+	}
+
+	return "Generic"
 }
 
 // ListAvailableImages returns all available distribution images.

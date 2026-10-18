@@ -58,7 +58,7 @@ func (a *App) serverOptionsHandler(w http.ResponseWriter, r *http.Request) {
 					for _, item := range selectedRegion.ListAvailable(items) {
 						serverTypes = append(serverTypes, serverOption{
 							Value: item.Slug,
-							Label: fmt.Sprintf("%d MB RAM, %d vCPUs, %d GB disk", item.Memory, item.VCPUs, item.Disk),
+							Label: fmt.Sprintf("%d MB RAM, %d vCPUs, %d GB disk, %s", item.Memory, item.VCPUs, item.Disk, item.ProcessorType()),
 						})
 					}
 				}
