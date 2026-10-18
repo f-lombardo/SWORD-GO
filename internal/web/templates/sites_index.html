@@ -28,9 +28,10 @@
                 <select class="form-select" name="server_id" required>
                     <option value="">Select server</option>
                     {{ range .Servers }}
-                    <option value="{{ .ID }}">{{ .Name }} ({{ .IPAddress }})</option>
+                    <option value="{{ .ID }}" {{ if ne .Status "provisioned" }}disabled{{ end }}>{{ .Name }} ({{ .IPAddress }}) — {{ .Status }}</option>
                     {{ end }}
                 </select>
+                <div class="form-text">Only provisioned servers can host a site.</div>
             </label></div>
             <div class="col-md-6"><label class="form-label">Domain <input class="form-control" name="domain" required placeholder="example.com"></label></div>
             <div class="col-md-3"><label class="form-label">PHP version

@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"sword-go/internal/app/servers"
 	"sword-go/internal/app/sites"
 )
 
@@ -25,16 +24,9 @@ func (a *App) sitesIndexCreateHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		provisionedServers := make([]servers.Server, 0)
-		for _, server := range serversList {
-			if server.Status == "provisioned" {
-				provisionedServers = append(provisionedServers, server)
-			}
-		}
-
 		a.renderTemplate(w, r, "sites_index.html", map[string]any{
 			"Sites":   sitesList,
-			"Servers": provisionedServers,
+			"Servers": serversList,
 		})
 	case http.MethodPost:
 		if err := r.ParseForm(); err != nil {
@@ -62,15 +54,9 @@ func (a *App) sitesIndexCreateHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			sitesList, _ := a.sitesService.ListSites(r.Context())
 			serversList, _ := a.serversService.ListServers(r.Context())
-			provisionedServers := make([]servers.Server, 0)
-			for _, server := range serversList {
-				if server.Status == "provisioned" {
-					provisionedServers = append(provisionedServers, server)
-				}
-			}
 			a.renderTemplate(w, r, "sites_index.html", map[string]any{
 				"Sites":   sitesList,
-				"Servers": provisionedServers,
+				"Servers": serversList,
 				"Error":   err.Error(),
 			})
 			return
