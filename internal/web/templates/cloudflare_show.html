@@ -9,7 +9,7 @@
 </head>
 <body class="bg-light">
 <main class="container py-4">
-    <p><a class="btn btn-outline-secondary btn-sm" href="/cloudflare/{{ .Integration.ID }}">← Back to zones</a></p>
+    <div class="mb-3">{{ template "navigation" . }}</div>
     <h1 class="h3 mb-1">Zone: {{ .ZoneName }}</h1>
     <p class="text-muted mb-4">Zone ID: {{ .ZoneID }}</p>
 

@@ -9,7 +9,7 @@
 </head>
 <body class="bg-light">
 <main class="container py-4">
-    <p><a class="btn btn-outline-secondary btn-sm" href="/backup-destinations">← Back to destinations</a></p>
+    <div class="mb-3">{{ template "navigation" . }}</div>
     <h1 class="h3 mb-3">{{ .Destination.Name }}</h1>
 
     <dl class="row mb-4">
