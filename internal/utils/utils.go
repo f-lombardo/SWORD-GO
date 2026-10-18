@@ -31,8 +31,8 @@ func RandomLowerAlphaNumeric(length int) string {
 	return string(out)
 }
 
-func SecondsFrom(at time.Time) int64 {
-	return int64(time.Since(at).Seconds())
+func SecondsFrom(startingTime time.Time) int64 {
+	return int64(time.Since(startingTime).Seconds())
 }
 
 func ResolveSecret(commandLineSecret string, secretPath string, envName string) string {
