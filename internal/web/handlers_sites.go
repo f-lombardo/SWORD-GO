@@ -100,9 +100,9 @@ func (a *App) sitesDetailHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		installScriptURL := absoluteURL(r, "/public/sites/"+parts[0]+"/scripts/install?token="+site.InstallToken)
-		deleteScriptURL := absoluteURL(r, "/public/sites/"+parts[0]+"/scripts/delete?token="+site.InstallToken)
-		callbackURL := absoluteURL(r, "/public/sites/"+parts[0]+"/callbacks/install?signature="+site.CallbackSignature)
+		installScriptURL := a.absoluteURL(r, "/public/sites/"+parts[0]+"/scripts/install?token="+site.InstallToken)
+		deleteScriptURL := a.absoluteURL(r, "/public/sites/"+parts[0]+"/scripts/delete?token="+site.InstallToken)
+		callbackURL := a.absoluteURL(r, "/public/sites/"+parts[0]+"/callbacks/install?signature="+site.CallbackSignature)
 
 		a.renderTemplate(w, r, "sites_show.html", map[string]any{
 			"Site":             site,

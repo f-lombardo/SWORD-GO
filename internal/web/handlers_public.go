@@ -3,9 +3,7 @@ package web
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 	"sword-go/internal/utils"
 	"time"
@@ -42,7 +40,7 @@ func (a *App) publicServersHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		callbackURL := "/public/servers/" + parts[0] + "/callbacks/provision?signature=" + server.CallbackSignature
-		callbackURL = absoluteURL(r, callbackURL)
+		callbackURL = a.absoluteURL(r, callbackURL)
 		script, renderErr := servers.RenderProvisionScript(servers.ProvisionScriptInput{
 			Server:      server,
 			CallbackURL: callbackURL,
@@ -124,7 +122,7 @@ func (a *App) publicSitesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		callbackURL := "/public/sites/" + parts[0] + "/callbacks/install?signature=" + site.CallbackSignature
-		callbackURL = absoluteURL(r, callbackURL)
+		callbackURL = a.absoluteURL(r, callbackURL)
 		script, renderErr := sites.RenderInstallScript(sites.InstallScriptInput{
 			Site:             site,
 			Server:           server,
@@ -207,26 +205,4 @@ func (a *App) publicSitesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.NotFound(w, r)
-}
-
-func absoluteURL(r *http.Request, path string) string {
-	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
-		return path
-	}
-	scheme := "http"
-	if proto := strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")); proto != "" {
-		scheme = proto
-	} else if r.TLS != nil {
-		scheme = "https"
-	}
-	host := r.Host
-	if forwardedHost := strings.TrimSpace(r.Header.Get("X-Forwarded-Host")); forwardedHost != "" {
-		host = forwardedHost
-	}
-	base := fmt.Sprintf("%s://%s", scheme, host)
-	parsed, err := url.Parse(path)
-	if err != nil {
-		return base + path
-	}
-	return base + parsed.String()
 }

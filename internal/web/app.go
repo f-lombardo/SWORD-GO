@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -39,10 +40,12 @@ type App struct {
 	loginLimiter        *loginRateLimiter
 	callbackGuard       *callbackReplayGuard
 	baseURL             string
+	port                string
 }
 
 func (a *App) String() string {
-	return a.server.Addr + " Base URL: " + a.baseURL
+	url := cmpOr(a.baseURL, "http://localhost:"+a.port)
+	return a.server.Addr + " URL: " + url
 }
 
 func NewApp() (*App, error) {
@@ -83,7 +86,7 @@ func NewApp() (*App, error) {
 	})
 	ipAddress := cmpOr(os.Getenv("SWORD_GO_HTTP_IP_ADDRESS"), "0.0.0.0")
 	port := cmpOr(os.Getenv("SWORD_GO_HTTP_PORT"), "8088")
-	baseURL := cmpOr(os.Getenv("SWORD_GO_BASE_URL"), "http://localhost:"+port)
+	baseURL := os.Getenv("SWORD_GO_BASE_URL")
 	sitesService := sites.NewService(sitesStore, store, baseURL)
 	backupsService := backups.NewService(backupsStore, store, sitesStore)
 	integrationsService := integrations.NewService(integrationsStore)
@@ -118,6 +121,7 @@ func NewApp() (*App, error) {
 		callbackGuard:       newCallbackReplayGuard(10 * time.Minute),
 		auth:                auth,
 		baseURL:             baseURL,
+		port:                port,
 	}
 
 	app.server = &http.Server{
@@ -173,6 +177,36 @@ func (a *App) renderTemplate(w http.ResponseWriter, r *http.Request, name string
 	if err := a.templates.ExecuteTemplate(w, name, data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func (a *App) absoluteURL(r *http.Request, path string) string {
+	if a.baseURL != "" {
+		base, baseErr := url.Parse(a.baseURL)
+		target, targetErr := url.Parse(path)
+		if baseErr == nil && targetErr == nil {
+			result := base.JoinPath(target.Path)
+			result.RawQuery = target.RawQuery
+			result.Fragment = target.Fragment
+			return result.String()
+		}
+	}
+
+	scheme := "http"
+	if proto := strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")); proto != "" {
+		scheme = proto
+	} else if r.TLS != nil {
+		scheme = "https"
+	}
+	host := r.Host
+	if forwardedHost := strings.TrimSpace(r.Header.Get("X-Forwarded-Host")); forwardedHost != "" {
+		host = forwardedHost
+	}
+	base := fmt.Sprintf("%s://%s", scheme, host)
+	parsed, err := url.Parse(path)
+	if err != nil {
+		return base + path
+	}
+	return base + parsed.String()
 }
 
 func parsePositiveID(pathValue string) (int64, error) {

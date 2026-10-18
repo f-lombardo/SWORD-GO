@@ -257,8 +257,8 @@ func (a *App) serversDetailHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		scriptURL := absoluteURL(r, "/public/servers/"+parts[0]+"/scripts/provision?token="+server.ProvisionToken)
-		callbackURL := absoluteURL(r, "/public/servers/"+parts[0]+"/callbacks/provision?signature="+server.CallbackSignature)
+		scriptURL := a.absoluteURL(r, "/public/servers/"+parts[0]+"/scripts/provision?token="+server.ProvisionToken)
+		callbackURL := a.absoluteURL(r, "/public/servers/"+parts[0]+"/callbacks/provision?signature="+server.CallbackSignature)
 		wgetCommand := `wget -qO sword-provision.sh "` + scriptURL + `" && sudo bash sword-provision.sh 2>&1 | tee sword-provision.log`
 		backupSchedules, schedulesErr := a.backupsService.ListSchedulesByServer(r.Context(), server.ID)
 		if schedulesErr != nil {
