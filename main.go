@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"sword-go/internal/cli"
@@ -28,8 +30,13 @@ func main() {
 		}
 
 		fmt.Printf("Starting SWORD-GO webserver on %s\n", app.String())
+		fmt.Println("Type quit and press Enter to stop the web server.")
 
-		if err = app.Run(context.Background()); err != nil {
+		webCtx, stopWebServer := context.WithCancel(context.Background())
+		defer stopWebServer()
+		go stopWebServerOnQuit(os.Stdin, stopWebServer)
+
+		if err = app.Run(webCtx); err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			os.Exit(1)
 		}
@@ -39,5 +46,15 @@ func main() {
 	if err := cli.Run(ctx, os.Stdout, os.Stderr, args); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
+	}
+}
+
+func stopWebServerOnQuit(input *os.File, stopWebServer context.CancelFunc) {
+	scanner := bufio.NewScanner(input)
+	for scanner.Scan() {
+		if strings.EqualFold(strings.TrimSpace(scanner.Text()), "quit") {
+			stopWebServer()
+			return
+		}
 	}
 }
