@@ -275,7 +275,7 @@ func (s *Service) provisionCloudServer(serverID int64, apiToken string) {
 	}
 	image := cmpOr(server.Image, defaultImage)
 
-	result, createErr := provider.Create(ctx, cloud.CreateServerData{
+	result, createErr := provider.CreateServer(ctx, cloud.CreateServerData{
 		APIKey:                   apiToken,
 		Name:                     server.Hostname,
 		ServerType:               server.ServerType,

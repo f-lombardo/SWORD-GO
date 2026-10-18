@@ -28,7 +28,7 @@ func NewProvider(client HTTPDoer) *Provider {
 	}
 }
 
-func (p *Provider) Create(ctx context.Context, data CreateServerData) (ServerResult, error) {
+func (p *Provider) CreateServer(ctx context.Context, data CreateServerData) (ServerResult, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}

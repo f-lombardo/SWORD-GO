@@ -38,7 +38,7 @@ func TestProviderUploadsRawSSHKeyAndReturnsServerDetails(t *testing.T) {
 	}
 
 	provider := NewProvider(client)
-	result, err := provider.Create(context.Background(), CreateServerData{
+	result, err := provider.CreateServer(context.Background(), CreateServerData{
 		APIKey:                   "test-token",
 		Name:                     "sword-web",
 		Location:                 "nbg1",
@@ -91,7 +91,7 @@ func TestProviderResolvesExistingSSHKeyByName(t *testing.T) {
 	}
 
 	provider := NewProvider(client)
-	result, err := provider.Create(context.Background(), CreateServerData{
+	result, err := provider.CreateServer(context.Background(), CreateServerData{
 		APIKey:                   "test-token",
 		Name:                     "sword-app",
 		Location:                 "hel1",

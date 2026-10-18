@@ -44,5 +44,5 @@ type ServerResult struct {
 
 // ServerProvider represents any provider capable of provisioning a cloud server.
 type ServerProvider interface {
-	Create(ctx context.Context, data CreateServerData) (ServerResult, error)
+	CreateServer(ctx context.Context, data CreateServerData) (ServerResult, error)
 }

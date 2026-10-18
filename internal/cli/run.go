@@ -190,7 +190,7 @@ func runDigitalOceanCreate(ctx context.Context, stdout io.Writer, stderr io.Writ
 	fmt.Fprintln(stdout, "Resolving SSH key…")
 
 	provider := digitalocean.NewProvider(http.DefaultClient)
-	result, err := provider.Create(ctx, digitalocean.CreateDropletData{
+	result, err := provider.CreateServer(ctx, digitalocean.CreateDropletData{
 		APIKey:                   apiKey,
 		Name:                     dropletName,
 		ServerType:               *serverType,
@@ -266,7 +266,7 @@ func runHetznerCreate(ctx context.Context, stdout io.Writer, stderr io.Writer, a
 	fmt.Fprintln(stdout, "Resolving SSH key…")
 
 	provider := hetzner.NewProvider(http.DefaultClient)
-	result, err := provider.Create(ctx, hetzner.CreateServerData{
+	result, err := provider.CreateServer(ctx, hetzner.CreateServerData{
 		APIKey:                   apiKey,
 		Name:                     serverName,
 		ServerType:               *serverType,
