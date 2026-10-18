@@ -1,16 +1,17 @@
 {{ define "navigation" }}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-    <nav class="d-flex flex-wrap gap-2" aria-label="Main navigation">
-        <a class="btn btn-outline-secondary btn-sm" href="/servers">Servers</a>
-        <a class="btn btn-outline-secondary btn-sm" href="/sites">Sites</a>
-        <a class="btn btn-outline-secondary btn-sm" href="/backup-destinations">Backup destinations</a>
-        <a class="btn btn-outline-secondary btn-sm" href="/backup-schedules">Backup schedules</a>
-        <a class="btn btn-outline-secondary btn-sm" href="/settings/integrations">Integrations</a>
-        <a class="btn btn-outline-secondary btn-sm" href="/cloudflare">Cloudflare</a>
+<div class="app-navigation d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <a class="brand me-2" href="/servers"><i class="fa-solid fa-shield-halved me-2"></i>SWORD-GO</a>
+    <nav class="d-flex flex-wrap gap-1 flex-grow-1" aria-label="Main navigation">
+        <a class="nav-link" href="/servers"><i class="fa-solid fa-server me-1"></i>Servers</a>
+        <a class="nav-link" href="/sites"><i class="fa-solid fa-globe me-1"></i>Sites</a>
+        <a class="nav-link" href="/backup-destinations"><i class="fa-solid fa-box-archive me-1"></i>Backup destinations</a>
+        <a class="nav-link" href="/backup-schedules"><i class="fa-solid fa-clock-rotate-left me-1"></i>Backup schedules</a>
+        <a class="nav-link" href="/settings/integrations"><i class="fa-solid fa-plug me-1"></i>Integrations</a>
+        <a class="nav-link" href="/cloudflare"><i class="fa-solid fa-cloud me-1"></i>Cloudflare</a>
     </nav>
     <form method="post" action="/logout">
         <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-        <button class="btn btn-outline-danger btn-sm" type="submit">Logout</button>
+        <button class="btn btn-outline-light btn-sm btn-logout" type="submit"><i class="fa-solid fa-right-from-bracket me-1"></i>Logout</button>
     </form>
 </div>
 {{ end }}
