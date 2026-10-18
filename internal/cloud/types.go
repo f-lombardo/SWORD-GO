@@ -42,7 +42,7 @@ type ServerResult struct {
 	SSHKeyStatus string
 }
 
-// ServerCreator represents any provider capable of provisioning a cloud server.
-type ServerCreator interface {
+// ServerProvider represents any provider capable of provisioning a cloud server.
+type ServerProvider interface {
 	Create(ctx context.Context, data CreateServerData) (ServerResult, error)
 }

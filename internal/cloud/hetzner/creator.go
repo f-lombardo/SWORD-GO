@@ -15,20 +15,20 @@ const apiBase = "https://api.hetzner.cloud/v1"
 
 type HTTPDoer = cloud.HTTPDoer
 
-type Creator struct {
+type Provider struct {
 	client  *cloud.Client
 	sshKeys *cloud.SSHKeyService
 }
 
-func NewCreator(client HTTPDoer) *Creator {
+func NewProvider(client HTTPDoer) *Provider {
 	cloudClient := cloud.NewClient(apiBase, client)
-	return &Creator{
+	return &Provider{
 		client:  cloudClient,
 		sshKeys: cloud.NewSSHKeyService(cloudClient, "/ssh_keys"),
 	}
 }
 
-func (c *Creator) Create(ctx context.Context, data CreateServerData) (ServerResult, error) {
+func (p *Provider) Create(ctx context.Context, data CreateServerData) (ServerResult, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -42,7 +42,7 @@ func (c *Creator) Create(ctx context.Context, data CreateServerData) (ServerResu
 
 	location := data.RegionOrLocation()
 
-	resolvedKey, err := c.sshKeys.Resolve(ctx, data.PublicKey, data.APIKey)
+	resolvedKey, err := p.sshKeys.Resolve(ctx, data.PublicKey, data.APIKey)
 	if err != nil {
 		return ServerResult{}, err
 	}
@@ -59,7 +59,7 @@ func (c *Creator) Create(ctx context.Context, data CreateServerData) (ServerResu
 		},
 	}
 
-	res, err := c.client.JSONRequest(ctx, http.MethodPost, "/servers", data.APIKey, payload)
+	res, err := p.client.JSONRequest(ctx, http.MethodPost, "/servers", data.APIKey, payload)
 	if err != nil {
 		return ServerResult{}, err
 	}
@@ -99,7 +99,7 @@ func (c *Creator) Create(ctx context.Context, data CreateServerData) (ServerResu
 		return ServerResult{}, errors.New("Hetzner API response did not include server details")
 	}
 
-	publicIP, err := c.waitForPublicIP(ctx, body.Server.ID, data.APIKey, data.PublicIPPollAttempts, data.PublicIPPollIntervalSecs)
+	publicIP, err := p.waitForPublicIP(ctx, body.Server.ID, data.APIKey, data.PublicIPPollAttempts, data.PublicIPPollIntervalSecs)
 	if err != nil {
 		return ServerResult{}, err
 	}
@@ -124,9 +124,9 @@ func (c *Creator) Create(ctx context.Context, data CreateServerData) (ServerResu
 	}, nil
 }
 
-func (c *Creator) waitForPublicIP(ctx context.Context, serverID int, apiKey string, attempts int, intervalSeconds int) (*string, error) {
+func (p *Provider) waitForPublicIP(ctx context.Context, serverID int, apiKey string, attempts int, intervalSeconds int) (*string, error) {
 	ip, err := cloud.WaitFor(ctx, attempts, time.Duration(intervalSeconds)*time.Second, func() (*string, error) {
-		res, err := c.client.Request(ctx, http.MethodGet, fmt.Sprintf("/servers/%d", serverID), apiKey, nil, nil)
+		res, err := p.client.Request(ctx, http.MethodGet, fmt.Sprintf("/servers/%d", serverID), apiKey, nil, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -160,6 +160,6 @@ func (c *Creator) waitForPublicIP(ctx context.Context, serverID int, apiKey stri
 	return ip, nil
 }
 
-func (c *Creator) authorizedRequestWithStatusOK(ctx context.Context, method string, path string, apiKey string) (*http.Response, error) {
-	return c.client.RequestWithStatusOK(ctx, method, path, apiKey, "Hetzner")
+func (p *Provider) authorizedRequestWithStatusOK(ctx context.Context, method string, path string, apiKey string) (*http.Response, error) {
+	return p.client.RequestWithStatusOK(ctx, method, path, apiKey, "Hetzner")
 }

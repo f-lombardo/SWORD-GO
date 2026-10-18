@@ -20,14 +20,14 @@ import (
 )
 
 type Service struct {
-	store    *Store
-	creators map[string]cloud.ServerCreator
+	store     *Store
+	providers map[string]cloud.ServerProvider
 }
 
-func NewService(store *Store, creators map[string]cloud.ServerCreator) *Service {
+func NewService(store *Store, providers map[string]cloud.ServerProvider) *Service {
 	return &Service{
-		store:    store,
-		creators: creators,
+		store:     store,
+		providers: providers,
 	}
 }
 
@@ -263,7 +263,7 @@ func (s *Service) provisionCloudServer(serverID int64, apiToken string) {
 	})
 	_ = s.store.Update(ctx, server)
 
-	creator, ok := s.creators[server.Provider]
+	provider, ok := s.providers[server.Provider]
 	if !ok {
 		s.failProvision(ctx, server, fmt.Errorf("unsupported provider: %s", server.Provider))
 		return
@@ -275,7 +275,7 @@ func (s *Service) provisionCloudServer(serverID int64, apiToken string) {
 	}
 	image := cmpOr(server.Image, defaultImage)
 
-	result, createErr := creator.Create(ctx, cloud.CreateServerData{
+	result, createErr := provider.Create(ctx, cloud.CreateServerData{
 		APIKey:                   apiToken,
 		Name:                     server.Hostname,
 		ServerType:               server.ServerType,

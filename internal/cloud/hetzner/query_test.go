@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestCreatorListAvailableLocations(t *testing.T) {
+func TestProviderListAvailableLocations(t *testing.T) {
 	client := &queueHTTPClient{
 		responses: []*http.Response{
 			jsonResponse(http.StatusOK, `{
@@ -32,8 +32,8 @@ func TestCreatorListAvailableLocations(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client)
-	locations, err := creator.ListAvailableLocations(context.Background(), "test-token")
+	provider := NewProvider(client)
+	locations, err := provider.ListAvailableLocations(context.Background(), "test-token")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -59,7 +59,7 @@ func TestCreatorListAvailableLocations(t *testing.T) {
 	}
 }
 
-func TestCreatorListServerTypesFiltersDeprecated(t *testing.T) {
+func TestProviderListServerTypesFiltersDeprecated(t *testing.T) {
 	client := &queueHTTPClient{
 		responses: []*http.Response{
 			jsonResponse(http.StatusOK, `{
@@ -89,8 +89,8 @@ func TestCreatorListServerTypesFiltersDeprecated(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client)
-	serverTypes, err := creator.ListServerTypes(context.Background(), "test-token")
+	provider := NewProvider(client)
+	serverTypes, err := provider.ListServerTypes(context.Background(), "test-token")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -112,15 +112,15 @@ func TestCreatorListServerTypesFiltersDeprecated(t *testing.T) {
 	}
 }
 
-func TestCreatorListAvailableLocationsHTTPError(t *testing.T) {
+func TestProviderListAvailableLocationsHTTPError(t *testing.T) {
 	client := &queueHTTPClient{
 		responses: []*http.Response{
 			jsonResponse(http.StatusUnauthorized, `{"error":{"message":"unauthorized"}}`),
 		},
 	}
 
-	creator := NewCreator(client)
-	_, err := creator.ListAvailableLocations(context.Background(), "bad-token")
+	provider := NewProvider(client)
+	_, err := provider.ListAvailableLocations(context.Background(), "bad-token")
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -180,7 +180,7 @@ func TestServerTypeString(t *testing.T) {
 	}
 }
 
-func TestCreatorListAvailableImages(t *testing.T) {
+func TestProviderListAvailableImages(t *testing.T) {
 	ubuntuName := "ubuntu-24.04"
 	debianName := "debian-12"
 
@@ -217,8 +217,8 @@ func TestCreatorListAvailableImages(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client)
-	images, err := creator.ListAvailableImages(context.Background(), "test-token")
+	provider := NewProvider(client)
+	images, err := provider.ListAvailableImages(context.Background(), "test-token")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -243,15 +243,15 @@ func TestCreatorListAvailableImages(t *testing.T) {
 	}
 }
 
-func TestCreatorListAvailableImagesHTTPError(t *testing.T) {
+func TestProviderListAvailableImagesHTTPError(t *testing.T) {
 	client := &queueHTTPClient{
 		responses: []*http.Response{
 			jsonResponse(http.StatusUnauthorized, `{"error":{"message":"unauthorized"}}`),
 		},
 	}
 
-	creator := NewCreator(client)
-	_, err := creator.ListAvailableImages(context.Background(), "bad-token")
+	provider := NewProvider(client)
+	_, err := provider.ListAvailableImages(context.Background(), "bad-token")
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}

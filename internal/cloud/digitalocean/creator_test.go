@@ -28,7 +28,7 @@ func jsonResponse(status int, body string) *http.Response {
 	}
 }
 
-func TestCreatorUploadsRawSSHKeyAndReturnsDropletDetails(t *testing.T) {
+func TestProviderUploadsRawSSHKeyAndReturnsDropletDetails(t *testing.T) {
 	client := &queueHTTPClient{
 		responses: []*http.Response{
 			jsonResponse(http.StatusCreated, `{"ssh_key":{"id":44,"name":"uploaded-key"}}`),
@@ -37,8 +37,8 @@ func TestCreatorUploadsRawSSHKeyAndReturnsDropletDetails(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client)
-	result, err := creator.Create(context.Background(), CreateDropletData{
+	provider := NewProvider(client)
+	result, err := provider.Create(context.Background(), CreateDropletData{
 		APIKey:                   "test-token",
 		Name:                     "sword-web",
 		Region:                   "ams3",
@@ -81,7 +81,7 @@ func TestCreatorUploadsRawSSHKeyAndReturnsDropletDetails(t *testing.T) {
 	}
 }
 
-func TestCreatorResolvesExistingSSHKeyByName(t *testing.T) {
+func TestProviderResolvesExistingSSHKeyByName(t *testing.T) {
 	client := &queueHTTPClient{
 		responses: []*http.Response{
 			jsonResponse(http.StatusOK, `{"ssh_keys":[{"id":22,"name":"existing-key","public_key":"ssh-ed25519 AAAA existing-key"}]}`),
@@ -90,8 +90,8 @@ func TestCreatorResolvesExistingSSHKeyByName(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client)
-	result, err := creator.Create(context.Background(), CreateDropletData{
+	provider := NewProvider(client)
+	result, err := provider.Create(context.Background(), CreateDropletData{
 		APIKey:                   "test-token",
 		Name:                     "sword-app",
 		Region:                   "nyc1",

@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestCreatorListAvailableRegions(t *testing.T) {
+func TestProviderListAvailableRegions(t *testing.T) {
 	client := &queueHTTPClient{
 		responses: []*http.Response{
 			jsonResponse(http.StatusOK, `{
@@ -34,8 +34,8 @@ func TestCreatorListAvailableRegions(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client)
-	regions, err := creator.ListAvailableRegions(context.Background(), "test-token")
+	provider := NewProvider(client)
+	regions, err := provider.ListAvailableRegions(context.Background(), "test-token")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -61,15 +61,15 @@ func TestCreatorListAvailableRegions(t *testing.T) {
 	}
 }
 
-func TestCreatorListAvailableRegionsHTTPError(t *testing.T) {
+func TestProviderListAvailableRegionsHTTPError(t *testing.T) {
 	client := &queueHTTPClient{
 		responses: []*http.Response{
 			jsonResponse(http.StatusUnauthorized, `{"message":"Unable to authenticate you"}`),
 		},
 	}
 
-	creator := NewCreator(client)
-	_, err := creator.ListAvailableRegions(context.Background(), "bad-token")
+	provider := NewProvider(client)
+	_, err := provider.ListAvailableRegions(context.Background(), "bad-token")
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -80,21 +80,21 @@ func TestCreatorListAvailableRegionsHTTPError(t *testing.T) {
 	}
 }
 
-func TestCreatorListAvailableRegionsInvalidJSON(t *testing.T) {
+func TestProviderListAvailableRegionsInvalidJSON(t *testing.T) {
 	client := &queueHTTPClient{
 		responses: []*http.Response{
 			jsonResponse(http.StatusOK, `invalid-json`),
 		},
 	}
 
-	creator := NewCreator(client)
-	_, err := creator.ListAvailableRegions(context.Background(), "test-token")
+	provider := NewProvider(client)
+	_, err := provider.ListAvailableRegions(context.Background(), "test-token")
 	if err == nil {
 		t.Fatal("expected decode error, got nil")
 	}
 }
 
-func TestCreatorListSizes(t *testing.T) {
+func TestProviderListSizes(t *testing.T) {
 	client := &queueHTTPClient{
 		responses: []*http.Response{
 			jsonResponse(http.StatusOK, `{
@@ -134,8 +134,8 @@ func TestCreatorListSizes(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client)
-	sizes, err := creator.ListSizes(context.Background(), "test-token")
+	provider := NewProvider(client)
+	sizes, err := provider.ListSizes(context.Background(), "test-token")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -157,15 +157,15 @@ func TestCreatorListSizes(t *testing.T) {
 	}
 }
 
-func TestCreatorListSizesHTTPError(t *testing.T) {
+func TestProviderListSizesHTTPError(t *testing.T) {
 	client := &queueHTTPClient{
 		responses: []*http.Response{
 			jsonResponse(http.StatusInternalServerError, `{"message":"Internal Server Error"}`),
 		},
 	}
 
-	creator := NewCreator(client)
-	_, err := creator.ListSizes(context.Background(), "test-token")
+	provider := NewProvider(client)
+	_, err := provider.ListSizes(context.Background(), "test-token")
 	if err == nil {
 		t.Fatal("expected error on 500, got nil")
 	}
@@ -221,7 +221,7 @@ func TestSizeString(t *testing.T) {
 	}
 }
 
-func TestCreatorListAvailableImages(t *testing.T) {
+func TestProviderListAvailableImages(t *testing.T) {
 	client := &queueHTTPClient{
 		responses: []*http.Response{
 			jsonResponse(http.StatusOK, `{
@@ -255,8 +255,8 @@ func TestCreatorListAvailableImages(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client)
-	images, err := creator.ListAvailableImages(context.Background(), "test-token")
+	provider := NewProvider(client)
+	images, err := provider.ListAvailableImages(context.Background(), "test-token")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -278,15 +278,15 @@ func TestCreatorListAvailableImages(t *testing.T) {
 	}
 }
 
-func TestCreatorListAvailableImagesHTTPError(t *testing.T) {
+func TestProviderListAvailableImagesHTTPError(t *testing.T) {
 	client := &queueHTTPClient{
 		responses: []*http.Response{
 			jsonResponse(http.StatusUnauthorized, `{"message":"Unauthorized"}`),
 		},
 	}
 
-	creator := NewCreator(client)
-	_, err := creator.ListAvailableImages(context.Background(), "bad-token")
+	provider := NewProvider(client)
+	_, err := provider.ListAvailableImages(context.Background(), "bad-token")
 	if err == nil {
 		t.Fatal("expected error on 401, got nil")
 	}

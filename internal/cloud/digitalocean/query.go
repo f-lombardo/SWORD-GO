@@ -8,8 +8,8 @@ import (
 	"sword-go/internal/cloud"
 )
 
-func (c *Creator) ListAvailableRegions(ctx context.Context, apiKey string) ([]Region, error) {
-	res, err := c.authorizedRequestWithStatusOK(ctx, http.MethodGet, "/regions?per_page=200", apiKey)
+func (p *Provider) ListAvailableRegions(ctx context.Context, apiKey string) ([]Region, error) {
+	res, err := p.authorizedRequestWithStatusOK(ctx, http.MethodGet, "/regions?per_page=200", apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -30,9 +30,9 @@ func (c *Creator) ListAvailableRegions(ctx context.Context, apiKey string) ([]Re
 	return regions, nil
 }
 
-func (c *Creator) ListSizes(ctx context.Context, apiKey string) ([]Size, error) {
+func (p *Provider) ListSizes(ctx context.Context, apiKey string) ([]Size, error) {
 
-	res, err := c.authorizedRequestWithStatusOK(ctx, http.MethodGet, "/sizes?per_page=200", apiKey)
+	res, err := p.authorizedRequestWithStatusOK(ctx, http.MethodGet, "/sizes?per_page=200", apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -69,8 +69,8 @@ func (size *Size) String() string {
 }
 
 // ListAvailableImages returns all available distribution images.
-func (c *Creator) ListAvailableImages(ctx context.Context, apiKey string) ([]Image, error) {
-	res, err := c.authorizedRequestWithStatusOK(ctx, http.MethodGet, "/images?type=distribution&per_page=200", apiKey)
+func (p *Provider) ListAvailableImages(ctx context.Context, apiKey string) ([]Image, error) {
+	res, err := p.authorizedRequestWithStatusOK(ctx, http.MethodGet, "/images?type=distribution&per_page=200", apiKey)
 	if err != nil {
 		return nil, err
 	}

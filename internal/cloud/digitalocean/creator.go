@@ -15,20 +15,20 @@ const apiBase = "https://api.digitalocean.com/v2"
 
 type HTTPDoer = cloud.HTTPDoer
 
-type Creator struct {
+type Provider struct {
 	client  *cloud.Client
 	sshKeys *cloud.SSHKeyService
 }
 
-func NewCreator(client HTTPDoer) *Creator {
+func NewProvider(client HTTPDoer) *Provider {
 	cloudClient := cloud.NewClient(apiBase, client)
-	return &Creator{
+	return &Provider{
 		client:  cloudClient,
 		sshKeys: cloud.NewSSHKeyService(cloudClient, "/account/keys"),
 	}
 }
 
-func (c *Creator) Create(ctx context.Context, data CreateDropletData) (DropletResult, error) {
+func (p *Provider) Create(ctx context.Context, data CreateDropletData) (DropletResult, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -42,7 +42,7 @@ func (c *Creator) Create(ctx context.Context, data CreateDropletData) (DropletRe
 
 	region := data.RegionOrLocation()
 
-	resolvedKey, err := c.sshKeys.Resolve(ctx, data.PublicKey, data.APIKey)
+	resolvedKey, err := p.sshKeys.Resolve(ctx, data.PublicKey, data.APIKey)
 	if err != nil {
 		return DropletResult{}, err
 	}
@@ -55,7 +55,7 @@ func (c *Creator) Create(ctx context.Context, data CreateDropletData) (DropletRe
 		"ssh_keys": []any{resolvedKey.ID},
 	}
 
-	res, err := c.client.JSONRequest(ctx, http.MethodPost, "/droplets", data.APIKey, payload)
+	res, err := p.client.JSONRequest(ctx, http.MethodPost, "/droplets", data.APIKey, payload)
 	if err != nil {
 		return DropletResult{}, err
 	}
@@ -87,7 +87,7 @@ func (c *Creator) Create(ctx context.Context, data CreateDropletData) (DropletRe
 		return DropletResult{}, errors.New("DigitalOcean API response did not include droplet details")
 	}
 
-	publicIP, err := c.waitForPublicIP(ctx, body.Droplet.ID, data.APIKey, data.PublicIPPollAttempts, data.PublicIPPollIntervalSecs)
+	publicIP, err := p.waitForPublicIP(ctx, body.Droplet.ID, data.APIKey, data.PublicIPPollAttempts, data.PublicIPPollIntervalSecs)
 	if err != nil {
 		return DropletResult{}, err
 	}
@@ -112,9 +112,9 @@ func (c *Creator) Create(ctx context.Context, data CreateDropletData) (DropletRe
 	}, nil
 }
 
-func (c *Creator) waitForPublicIP(ctx context.Context, dropletID int, apiKey string, attempts int, intervalSeconds int) (*string, error) {
+func (p *Provider) waitForPublicIP(ctx context.Context, dropletID int, apiKey string, attempts int, intervalSeconds int) (*string, error) {
 	ip, err := cloud.WaitFor(ctx, attempts, time.Duration(intervalSeconds)*time.Second, func() (*string, error) {
-		res, err := c.client.Request(ctx, http.MethodGet, fmt.Sprintf("/droplets/%d", dropletID), apiKey, nil, nil)
+		res, err := p.client.Request(ctx, http.MethodGet, fmt.Sprintf("/droplets/%d", dropletID), apiKey, nil, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -151,6 +151,6 @@ func (c *Creator) waitForPublicIP(ctx context.Context, dropletID int, apiKey str
 	return ip, nil
 }
 
-func (c *Creator) authorizedRequestWithStatusOK(ctx context.Context, method string, path string, apiKey string) (*http.Response, error) {
-	return c.client.RequestWithStatusOK(ctx, method, path, apiKey, "DigitalOcean")
+func (p *Provider) authorizedRequestWithStatusOK(ctx context.Context, method string, path string, apiKey string) (*http.Response, error) {
+	return p.client.RequestWithStatusOK(ctx, method, path, apiKey, "DigitalOcean")
 }

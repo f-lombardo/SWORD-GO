@@ -26,9 +26,9 @@ func newTestService(t *testing.T) *Service {
 		t.Fatalf("ensure schema: %v", err)
 	}
 
-	return NewService(store, map[string]cloud.ServerCreator{
-		"digital_ocean": digitalocean.NewCreator(nil),
-		"hetzner":       hetzner.NewCreator(nil),
+	return NewService(store, map[string]cloud.ServerProvider{
+		"digital_ocean": digitalocean.NewProvider(nil),
+		"hetzner":       hetzner.NewProvider(nil),
 	})
 }
 
