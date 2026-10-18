@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 	"sword-go/internal/utils"
 	"text/tabwriter"
@@ -393,35 +392,12 @@ func runHetznerListImages(ctx context.Context, stdout io.Writer, stderr io.Write
 }
 
 func resolveAPIKey(commandLineAPIKey string, secretPath string, envName string) (string, error) {
-	if strings.TrimSpace(commandLineAPIKey) != "" {
-		return strings.TrimSpace(commandLineAPIKey), nil
+	apiKey := utils.ResolveSecret(commandLineAPIKey, secretPath, "HETZNER_API_KEY")
+	if strings.TrimSpace(apiKey) != "" {
+		return apiKey, nil
 	}
 
-	secretFileAPIKey := readAPIKeyFromSecret(secretPath)
-	if secretFileAPIKey != "" {
-		return secretFileAPIKey, nil
-	}
-
-	envApiKey := strings.TrimSpace(os.Getenv(envName))
-	if envApiKey != "" {
-		return envApiKey, nil
-	}
-
-	return "", fmt.Errorf("an API key is required. Pass --key=<token>, provide it in %s, or set %s in your environment", secretPath, envName)
-}
-
-func readAPIKeyFromSecret(secretPath string) string {
-	info, err := os.Stat(secretPath)
-	if err != nil || info.IsDir() {
-		return ""
-	}
-
-	content, err := os.ReadFile(secretPath)
-	if err != nil {
-		return ""
-	}
-
-	return strings.TrimSpace(string(content))
+	return "", fmt.Errorf("an API key is required: Pass --key=<token>, provide it in %s, or set %s in your environment", secretPath, envName)
 }
 
 func printMainUsage(w io.Writer) {
