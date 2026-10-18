@@ -34,8 +34,8 @@ func TestCreatorListAvailableRegions(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client, context.Background())
-	regions, err := creator.ListAvailableRegions("test-token")
+	creator := NewCreator(client)
+	regions, err := creator.ListAvailableRegions(context.Background(), "test-token")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -68,8 +68,8 @@ func TestCreatorListAvailableRegionsHTTPError(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client, context.Background())
-	_, err := creator.ListAvailableRegions("bad-token")
+	creator := NewCreator(client)
+	_, err := creator.ListAvailableRegions(context.Background(), "bad-token")
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -87,8 +87,8 @@ func TestCreatorListAvailableRegionsInvalidJSON(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client, context.Background())
-	_, err := creator.ListAvailableRegions("test-token")
+	creator := NewCreator(client)
+	_, err := creator.ListAvailableRegions(context.Background(), "test-token")
 	if err == nil {
 		t.Fatal("expected decode error, got nil")
 	}
@@ -134,8 +134,8 @@ func TestCreatorListSizes(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client, context.Background())
-	sizes, err := creator.ListSizes("test-token")
+	creator := NewCreator(client)
+	sizes, err := creator.ListSizes(context.Background(), "test-token")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -164,8 +164,8 @@ func TestCreatorListSizesHTTPError(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client, context.Background())
-	_, err := creator.ListSizes("test-token")
+	creator := NewCreator(client)
+	_, err := creator.ListSizes(context.Background(), "test-token")
 	if err == nil {
 		t.Fatal("expected error on 500, got nil")
 	}
@@ -255,8 +255,8 @@ func TestCreatorListAvailableImages(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client, context.Background())
-	images, err := creator.ListAvailableImages("test-token")
+	creator := NewCreator(client)
+	images, err := creator.ListAvailableImages(context.Background(), "test-token")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -285,8 +285,8 @@ func TestCreatorListAvailableImagesHTTPError(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client, context.Background())
-	_, err := creator.ListAvailableImages("bad-token")
+	creator := NewCreator(client)
+	_, err := creator.ListAvailableImages(context.Background(), "bad-token")
 	if err == nil {
 		t.Fatal("expected error on 401, got nil")
 	}

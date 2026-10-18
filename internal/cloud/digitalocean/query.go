@@ -1,14 +1,15 @@
 package digitalocean
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"slices"
 	"sword-go/internal/cloud"
 )
 
-func (c *Creator) ListAvailableRegions(apiKey string) ([]Region, error) {
-	res, err := c.authorizedRequestWithStatusOK(http.MethodGet, "/regions?per_page=200", apiKey, nil)
+func (c *Creator) ListAvailableRegions(ctx context.Context, apiKey string) ([]Region, error) {
+	res, err := c.authorizedRequestWithStatusOK(ctx, http.MethodGet, "/regions?per_page=200", apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -29,9 +30,9 @@ func (c *Creator) ListAvailableRegions(apiKey string) ([]Region, error) {
 	return regions, nil
 }
 
-func (c *Creator) ListSizes(apiKey string) ([]Size, error) {
+func (c *Creator) ListSizes(ctx context.Context, apiKey string) ([]Size, error) {
 
-	res, err := c.authorizedRequestWithStatusOK(http.MethodGet, "/sizes?per_page=200", apiKey, nil)
+	res, err := c.authorizedRequestWithStatusOK(ctx, http.MethodGet, "/sizes?per_page=200", apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -68,8 +69,8 @@ func (size *Size) String() string {
 }
 
 // ListAvailableImages returns all available distribution images.
-func (c *Creator) ListAvailableImages(apiKey string) ([]Image, error) {
-	res, err := c.authorizedRequestWithStatusOK(http.MethodGet, "/images?type=distribution&per_page=200", apiKey, nil)
+func (c *Creator) ListAvailableImages(ctx context.Context, apiKey string) ([]Image, error) {
+	res, err := c.authorizedRequestWithStatusOK(ctx, http.MethodGet, "/images?type=distribution&per_page=200", apiKey)
 	if err != nil {
 		return nil, err
 	}

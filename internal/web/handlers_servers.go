@@ -44,15 +44,15 @@ func (a *App) serverOptionsHandler(w http.ResponseWriter, r *http.Request) {
 	if apiKey != "" {
 		switch provider {
 		case "digital_ocean":
-			creator := digitalocean.NewCreator(http.DefaultClient, r.Context())
-			items, err := creator.ListAvailableRegions(apiKey)
+			creator := digitalocean.NewCreator(http.DefaultClient)
+			items, err := creator.ListAvailableRegions(r.Context(), apiKey)
 			if err == nil {
 				for _, item := range items {
 					regions = append(regions, serverOption{Value: item.Slug, Label: item.Name})
 				}
 			}
 			if region != "" {
-				items, err := creator.ListSizes(apiKey)
+				items, err := creator.ListSizes(r.Context(), apiKey)
 				if err == nil {
 					selectedRegion := digitalocean.Region{Slug: region}
 					for _, item := range selectedRegion.ListAvailable(items) {
@@ -63,22 +63,22 @@ func (a *App) serverOptionsHandler(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
-			imageItems, err := creator.ListAvailableImages(apiKey)
+			imageItems, err := creator.ListAvailableImages(r.Context(), apiKey)
 			if err == nil {
 				for _, item := range imageItems {
 					images = append(images, serverOption{Value: cmpOr(item.Slug, fmt.Sprintf("%d", item.ID))})
 				}
 			}
 		case "hetzner":
-			creator := hetzner.NewCreator(http.DefaultClient, r.Context())
-			locations, err := creator.ListAvailableLocations(apiKey)
+			creator := hetzner.NewCreator(http.DefaultClient)
+			locations, err := creator.ListAvailableLocations(r.Context(), apiKey)
 			if err == nil {
 				for _, item := range locations {
 					regions = append(regions, serverOption{Value: item.Name, Label: item.Description})
 				}
 			}
 			if region != "" {
-				types, typeErr := creator.ListServerTypes(apiKey)
+				types, typeErr := creator.ListServerTypes(r.Context(), apiKey)
 				if typeErr == nil {
 					for _, location := range locations {
 						if location.Name == region {
@@ -93,7 +93,7 @@ func (a *App) serverOptionsHandler(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
-			imageItems, err := creator.ListAvailableImages(apiKey)
+			imageItems, err := creator.ListAvailableImages(r.Context(), apiKey)
 			if err == nil {
 				for _, item := range imageItems {
 					if item.Name != nil && *item.Name != "" {

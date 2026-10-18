@@ -32,8 +32,8 @@ func TestCreatorListAvailableLocations(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client, context.Background())
-	locations, err := creator.ListAvailableLocations("test-token")
+	creator := NewCreator(client)
+	locations, err := creator.ListAvailableLocations(context.Background(), "test-token")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -89,8 +89,8 @@ func TestCreatorListServerTypesFiltersDeprecated(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client, context.Background())
-	serverTypes, err := creator.ListServerTypes("test-token")
+	creator := NewCreator(client)
+	serverTypes, err := creator.ListServerTypes(context.Background(), "test-token")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -119,8 +119,8 @@ func TestCreatorListAvailableLocationsHTTPError(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client, context.Background())
-	_, err := creator.ListAvailableLocations("bad-token")
+	creator := NewCreator(client)
+	_, err := creator.ListAvailableLocations(context.Background(), "bad-token")
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -217,8 +217,8 @@ func TestCreatorListAvailableImages(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client, context.Background())
-	images, err := creator.ListAvailableImages("test-token")
+	creator := NewCreator(client)
+	images, err := creator.ListAvailableImages(context.Background(), "test-token")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -250,8 +250,8 @@ func TestCreatorListAvailableImagesHTTPError(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client, context.Background())
-	_, err := creator.ListAvailableImages("bad-token")
+	creator := NewCreator(client)
+	_, err := creator.ListAvailableImages(context.Background(), "bad-token")
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}

@@ -78,8 +78,8 @@ func NewApp() (*App, error) {
 
 	httpClient := &http.Client{Timeout: 60 * time.Second}
 	service := servers.NewService(store, map[string]cloud.ServerCreator{
-		"digital_ocean": digitalocean.NewCreator(httpClient, context.Background()),
-		"hetzner":       hetzner.NewCreator(httpClient, context.Background()),
+		"digital_ocean": digitalocean.NewCreator(httpClient),
+		"hetzner":       hetzner.NewCreator(httpClient),
 	})
 	ipAddress := cmpOr(os.Getenv("SWORD_GO_HTTP_IP_ADDRESS"), "0.0.0.0")
 	port := cmpOr(os.Getenv("SWORD_GO_HTTP_PORT"), "8088")

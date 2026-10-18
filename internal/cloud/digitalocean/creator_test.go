@@ -37,8 +37,8 @@ func TestCreatorUploadsRawSSHKeyAndReturnsDropletDetails(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client, context.Background())
-	result, err := creator.Create(CreateDropletData{
+	creator := NewCreator(client)
+	result, err := creator.Create(context.Background(), CreateDropletData{
 		APIKey:                   "test-token",
 		Name:                     "sword-web",
 		Region:                   "ams3",
@@ -90,8 +90,8 @@ func TestCreatorResolvesExistingSSHKeyByName(t *testing.T) {
 		},
 	}
 
-	creator := NewCreator(client, context.Background())
-	result, err := creator.Create(CreateDropletData{
+	creator := NewCreator(client)
+	result, err := creator.Create(context.Background(), CreateDropletData{
 		APIKey:                   "test-token",
 		Name:                     "sword-app",
 		Region:                   "nyc1",

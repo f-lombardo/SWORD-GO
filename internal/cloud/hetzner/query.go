@@ -1,6 +1,7 @@
 package hetzner
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"slices"
@@ -8,8 +9,8 @@ import (
 )
 
 // ListAvailableLocations returns all available locations in Hetzner Cloud.
-func (c *Creator) ListAvailableLocations(apiKey string) ([]Location, error) {
-	res, err := c.authorizedRequestWithStatusOK(http.MethodGet, "/locations?per_page=50", apiKey, nil)
+func (c *Creator) ListAvailableLocations(ctx context.Context, apiKey string) ([]Location, error) {
+	res, err := c.authorizedRequestWithStatusOK(ctx, http.MethodGet, "/locations?per_page=50", apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -23,8 +24,8 @@ func (c *Creator) ListAvailableLocations(apiKey string) ([]Location, error) {
 }
 
 // ListServerTypes returns all non-deprecated server types.
-func (c *Creator) ListServerTypes(apiKey string) ([]ServerType, error) {
-	res, err := c.authorizedRequestWithStatusOK(http.MethodGet, "/server_types?per_page=50", apiKey, nil)
+func (c *Creator) ListServerTypes(ctx context.Context, apiKey string) ([]ServerType, error) {
+	res, err := c.authorizedRequestWithStatusOK(ctx, http.MethodGet, "/server_types?per_page=50", apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -64,8 +65,8 @@ func (st *ServerType) String() string {
 }
 
 // ListAvailableImages returns all available system images.
-func (c *Creator) ListAvailableImages(apiKey string) ([]Image, error) {
-	res, err := c.authorizedRequestWithStatusOK(http.MethodGet, "/images?type=system&per_page=100", apiKey, nil)
+func (c *Creator) ListAvailableImages(ctx context.Context, apiKey string) ([]Image, error) {
+	res, err := c.authorizedRequestWithStatusOK(ctx, http.MethodGet, "/images?type=system&per_page=100", apiKey)
 	if err != nil {
 		return nil, err
 	}

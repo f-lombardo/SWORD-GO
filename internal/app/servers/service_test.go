@@ -27,8 +27,8 @@ func newTestService(t *testing.T) *Service {
 	}
 
 	return NewService(store, map[string]cloud.ServerCreator{
-		"digital_ocean": digitalocean.NewCreator(nil, context.Background()),
-		"hetzner":       hetzner.NewCreator(nil, context.Background()),
+		"digital_ocean": digitalocean.NewCreator(nil),
+		"hetzner":       hetzner.NewCreator(nil),
 	})
 }
 

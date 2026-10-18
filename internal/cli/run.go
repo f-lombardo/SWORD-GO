@@ -90,13 +90,13 @@ func runDigitalOceanListRegions(ctx context.Context, stdout io.Writer, stderr io
 		return err
 	}
 
-	creator := digitalocean.NewCreator(http.DefaultClient, ctx)
-	regions, err := creator.ListAvailableRegions(apiKey)
+	creator := digitalocean.NewCreator(http.DefaultClient)
+	regions, err := creator.ListAvailableRegions(ctx, apiKey)
 	if err != nil {
 		return err
 	}
 
-	sizes, err := creator.ListSizes(apiKey)
+	sizes, err := creator.ListSizes(ctx, apiKey)
 	if err != nil {
 		return err
 	}
@@ -133,8 +133,8 @@ func runDigitalOceanListImages(ctx context.Context, stdout io.Writer, stderr io.
 		return err
 	}
 
-	creator := digitalocean.NewCreator(http.DefaultClient, ctx)
-	images, err := creator.ListAvailableImages(apiKey)
+	creator := digitalocean.NewCreator(http.DefaultClient)
+	images, err := creator.ListAvailableImages(ctx, apiKey)
 	if err != nil {
 		return err
 	}
@@ -189,8 +189,8 @@ func runDigitalOceanCreate(ctx context.Context, stdout io.Writer, stderr io.Writ
 
 	fmt.Fprintln(stdout, "Resolving SSH key…")
 
-	creator := digitalocean.NewCreator(http.DefaultClient, ctx)
-	result, err := creator.Create(digitalocean.CreateDropletData{
+	creator := digitalocean.NewCreator(http.DefaultClient)
+	result, err := creator.Create(ctx, digitalocean.CreateDropletData{
 		APIKey:                   apiKey,
 		Name:                     dropletName,
 		ServerType:               *serverType,
@@ -265,8 +265,8 @@ func runHetznerCreate(ctx context.Context, stdout io.Writer, stderr io.Writer, a
 
 	fmt.Fprintln(stdout, "Resolving SSH key…")
 
-	creator := hetzner.NewCreator(http.DefaultClient, ctx)
-	result, err := creator.Create(hetzner.CreateServerData{
+	creator := hetzner.NewCreator(http.DefaultClient)
+	result, err := creator.Create(ctx, hetzner.CreateServerData{
 		APIKey:                   apiKey,
 		Name:                     serverName,
 		ServerType:               *serverType,
@@ -324,13 +324,13 @@ func runHetznerListRegions(ctx context.Context, stdout io.Writer, stderr io.Writ
 	if err != nil {
 		return err
 	}
-	creator := hetzner.NewCreator(http.DefaultClient, ctx)
-	regions, err := creator.ListAvailableLocations(apiKey)
+	creator := hetzner.NewCreator(http.DefaultClient)
+	regions, err := creator.ListAvailableLocations(ctx, apiKey)
 	if err != nil {
 		return err
 	}
 
-	serverTypes, err := creator.ListServerTypes(apiKey)
+	serverTypes, err := creator.ListServerTypes(ctx, apiKey)
 	if err != nil {
 		return err
 	}
@@ -367,8 +367,8 @@ func runHetznerListImages(ctx context.Context, stdout io.Writer, stderr io.Write
 		return err
 	}
 
-	creator := hetzner.NewCreator(http.DefaultClient, ctx)
-	images, err := creator.ListAvailableImages(apiKey)
+	creator := hetzner.NewCreator(http.DefaultClient)
+	images, err := creator.ListAvailableImages(ctx, apiKey)
 	if err != nil {
 		return err
 	}

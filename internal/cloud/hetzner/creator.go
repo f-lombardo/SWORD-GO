@@ -18,27 +18,20 @@ type HTTPDoer = cloud.HTTPDoer
 type Creator struct {
 	client  *cloud.Client
 	sshKeys *cloud.SSHKeyService
-	ctx     context.Context
 }
 
-func NewCreator(client HTTPDoer, ctx context.Context) *Creator {
+func NewCreator(client HTTPDoer) *Creator {
 	cloudClient := cloud.NewClient(apiBase, client)
 	return &Creator{
 		client:  cloudClient,
 		sshKeys: cloud.NewSSHKeyService(cloudClient, "/ssh_keys"),
-		ctx:     ctx,
 	}
 }
 
-func (c *Creator) Create(data CreateServerData) (ServerResult, error) {
-	ctx := c.ctx
+func (c *Creator) Create(ctx context.Context, data CreateServerData) (ServerResult, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	return c.CreateWithContext(ctx, data)
-}
-
-func (c *Creator) CreateWithContext(ctx context.Context, data CreateServerData) (ServerResult, error) {
 	if data.PublicIPPollAttempts < 1 {
 		return ServerResult{}, errors.New("public IP poll attempts must be greater than zero")
 	}
@@ -167,10 +160,6 @@ func (c *Creator) waitForPublicIP(ctx context.Context, serverID int, apiKey stri
 	return ip, nil
 }
 
-func (c *Creator) authorizedRequestWithStatusOK(method string, path string, apiKey string, _ any) (*http.Response, error) {
-	ctx := c.ctx
-	if ctx == nil {
-		ctx = context.Background()
-	}
+func (c *Creator) authorizedRequestWithStatusOK(ctx context.Context, method string, path string, apiKey string) (*http.Response, error) {
 	return c.client.RequestWithStatusOK(ctx, method, path, apiKey, "Hetzner")
 }
