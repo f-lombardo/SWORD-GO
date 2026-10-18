@@ -27,7 +27,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		fmt.Printf("Starting SWORD-GO webserver on %s", app.String())
+		fmt.Printf("Starting SWORD-GO webserver on %s\n", app.String())
 
 		if err = app.Run(context.Background()); err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
