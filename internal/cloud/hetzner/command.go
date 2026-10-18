@@ -141,3 +141,9 @@ func (p *Provider) waitForPublicIP(ctx context.Context, serverID int, apiKey str
 
 	return ip, nil
 }
+
+// CreateServerData aliases the unified cloud.CreateServerData.
+type CreateServerData = cloud.CreateServerData
+
+// ServerResult aliases the unified cloud.ServerResult.
+type ServerResult = cloud.ServerResult

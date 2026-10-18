@@ -132,3 +132,9 @@ func (p *Provider) waitForPublicIP(ctx context.Context, dropletID int, apiKey st
 
 	return ip, nil
 }
+
+// CreateDropletData aliases the unified cloud.CreateServerData.
+type CreateDropletData = cloud.CreateServerData
+
+// DropletResult aliases the unified cloud.ServerResult.
+type DropletResult = cloud.ServerResult
