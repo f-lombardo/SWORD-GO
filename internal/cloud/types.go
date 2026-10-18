@@ -2,13 +2,7 @@ package cloud
 
 import (
 	"context"
-	"net/http"
 )
-
-// HTTPDoer abstracts executing HTTP requests.
-type HTTPDoer interface {
-	Do(req *http.Request) (*http.Response, error)
-}
 
 // CreateServerData holds the common input required to provision a cloud server.
 type CreateServerData struct {

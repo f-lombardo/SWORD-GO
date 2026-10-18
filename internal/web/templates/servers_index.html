@@ -55,7 +55,7 @@
                 </select>
             </label></div>
             <div class="col-md-4"><label class="form-label">Region/location <input class="form-control" name="region" id="region" list="region-options" placeholder="nyc1 or nbg1" hx-post="/servers/options" hx-trigger="change" hx-include="closest form" hx-target="#server-options" hx-swap="outerHTML"></label></div>
-            <div class="col-md-4"><label class="form-label">Server type <input class="form-control" name="server_type" list="server-type-options" placeholder="s-1vcpu-1gb or cx23"></label></div>
+            <div class="col-md-4"><label class="form-label">Server type (depends on Region) <input class="form-control" name="server_type" list="server-type-options" placeholder="s-1vcpu-1gb or cx23"></label></div>
             <div class="col-md-4"><label class="form-label">Image <input class="form-control" name="image" list="image-options"></label></div>
             <div class="col-md-6"><label class="form-label">IP Address (custom servers) <input class="form-control" name="ip_address" autocomplete="off"></label></div>
             <div class="col-md-6"><label class="form-label">Provider API token (optional, not persisted) <input class="form-control" name="api_token" id="api_token" type="password" autocomplete="new-password" hx-post="/servers/options" hx-trigger="change" hx-include="closest form" hx-target="#server-options" hx-swap="outerHTML"></label></div>

@@ -10,6 +10,11 @@ import (
 	"net/http"
 )
 
+// HTTPDoer abstracts executing HTTP requests.
+type HTTPDoer interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 // Client handles authenticated HTTP requests for cloud provider APIs.
 type Client struct {
 	BaseURL string
