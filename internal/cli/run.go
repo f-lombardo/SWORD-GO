@@ -11,13 +11,16 @@ import (
 	"sword-go/internal/utils"
 	"text/tabwriter"
 
+	"sword-go/internal/cloud"
 	"sword-go/internal/cloud/digitalocean"
 	"sword-go/internal/cloud/hetzner"
+	"sword-go/internal/cloud/hostinger"
 )
 
 const (
-	doAPISecretPath      = "/run/secrets/do_api_key"
-	hetznerAPISecretPath = "/run/secrets/hetzner_api_key"
+	doAPISecretPath        = "/run/secrets/do_api_key"
+	hostingerAPISecretPath = "/run/secrets/hostinger_api_key"
+	hetznerAPISecretPath   = "/run/secrets/hetzner_api_key"
 )
 
 func Run(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string) error {
@@ -61,10 +64,73 @@ func Run(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string)
 			printMainUsage(stderr)
 			return fmt.Errorf("unknown subcommand: hetzner %s", args[1])
 		}
+	case "hostinger":
+		if args[1] == "create" {
+			return runHostingerCreate(ctx, stdout, stderr, args[2:])
+		}
+		if args[1] == "-h" || args[1] == "--help" || args[1] == "help" {
+			printMainUsage(stdout)
+			return nil
+		}
+		printMainUsage(stderr)
+		return fmt.Errorf("unknown subcommand: hostinger %s", args[1])
 	default:
 		printMainUsage(stderr)
 		return fmt.Errorf("unknown provider: %s", args[0])
 	}
+}
+
+func runHostingerCreate(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string) error {
+	flags := flag.NewFlagSet("hostinger create", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	flags.Usage = func() {
+		fmt.Fprintln(stderr, "Usage:")
+		fmt.Fprintln(stderr, "  sword-go hostinger create --location=DATA_CENTER_ID --type=CATALOG_PRICE_ID --image=TEMPLATE_ID --password=ROOT_PASSWORD --public-key=<key> [--key=TOKEN] [--name=HOSTNAME]")
+	}
+
+	key := flags.String("key", "", "The Hostinger API key")
+	name := flags.String("name", "", "The VPS hostname")
+	location := flags.String("location", "", "Hostinger data center ID")
+	serverType := flags.String("type", "", "Hostinger VPS catalog price item ID")
+	image := flags.String("image", "", "Hostinger OS template ID")
+	password := flags.String("password", "", "Root password for the VPS")
+	publicKey := flags.String("public-key", "", "SSH public key to install on the VPS")
+
+	if err := flags.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
+		return err
+	}
+	apiKey := utils.ResolveSecret(*key, hostingerAPISecretPath, "HOSTINGER_API_KEY")
+	if strings.TrimSpace(apiKey) == "" {
+		return fmt.Errorf("a Hostinger API key is required: pass --key=<token>, provide it in %s, or set HOSTINGER_API_KEY in your environment", hostingerAPISecretPath)
+	}
+	if strings.TrimSpace(*location) == "" || strings.TrimSpace(*serverType) == "" || strings.TrimSpace(*image) == "" || strings.TrimSpace(*password) == "" || strings.TrimSpace(*publicKey) == "" {
+		return errors.New("--location, --type, --image, --password, and --public-key are required; run 'sword-go hostinger create --help' for details")
+	}
+	serverName := strings.TrimSpace(*name)
+	if serverName == "" {
+		serverName = "server-" + utils.RandomLowerAlphaNumeric(8)
+	}
+
+	provider := hostinger.NewProvider(http.DefaultClient)
+	result, err := provider.CreateServer(ctx, cloud.CreateServerData{
+		APIKey: apiKey, Name: serverName, Region: *location, ServerType: *serverType,
+		Image: *image, RootPassword: *password, PublicKey: *publicKey,
+	})
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(stdout, "Hostinger VPS created successfully.")
+	table := tabwriter.NewWriter(stdout, 0, 4, 2, ' ', 0)
+	_, _ = fmt.Fprintln(table, "ID\tName\tLocation\tPlan\tStatus")
+	_, _ = fmt.Fprintf(table, "%d\t%s\t%s\t%s\t%s\n", result.ID, result.Name, result.Region, result.ServerType, result.Status)
+	_ = table.Flush()
+	if result.PublicIP != nil {
+		fmt.Fprintf(stdout, "Public IP: %s\n", *result.PublicIP)
+	}
+	return nil
 }
 
 func runDigitalOceanListRegions(ctx context.Context, stdout io.Writer, stderr io.Writer, args []string) error {
@@ -408,5 +474,6 @@ func printMainUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  sword-go hetzner create [--key=TOKEN] [--name=NAME] [--location=nbg1] [--type=cx23] [--image=ubuntu-24.04] --public-key=<name|key>")
 	_, _ = fmt.Fprintln(w, "  sword-go hetzner regions [--key=TOKEN]")
 	_, _ = fmt.Fprintln(w, "  sword-go hetzner images [--key=TOKEN]")
+	_, _ = fmt.Fprintln(w, "  sword-go hostinger create --location=DATA_CENTER_ID --type=CATALOG_PRICE_ID --image=TEMPLATE_ID --password=ROOT_PASSWORD --public-key=<key> [--key=TOKEN] [--name=HOSTNAME]")
 	_, _ = fmt.Fprintln(w, "  sword-go web")
 }
