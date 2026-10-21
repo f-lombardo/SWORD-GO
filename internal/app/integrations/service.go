@@ -111,9 +111,9 @@ func validateCreate(input CreateInput) error {
 
 	provider := strings.TrimSpace(input.Provider)
 	switch provider {
-	case "cloudflare", "digital_ocean", "hetzner":
+	case "cloudflare", "digital_ocean", "hetzner", "hostinger":
 	default:
-		return errors.New("provider must be cloudflare, digital_ocean, or hetzner")
+		return errors.New("provider must be cloudflare, digital_ocean, hetzner, or hostinger")
 	}
 
 	credentials := input.Credentials

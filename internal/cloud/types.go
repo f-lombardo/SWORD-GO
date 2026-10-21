@@ -13,6 +13,7 @@ type CreateServerData struct {
 	Location                 string // Alias for Region used by providers like Hetzner
 	Image                    string
 	PublicKey                string
+	RootPassword             string
 	PublicIPPollAttempts     int
 	PublicIPPollIntervalSecs int
 }

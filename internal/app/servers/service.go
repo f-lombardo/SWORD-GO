@@ -282,6 +282,7 @@ func (s *Service) provisionCloudServer(serverID int64, apiToken string) {
 		Region:                   server.Region,
 		Image:                    image,
 		PublicKey:                strings.TrimSpace(server.SSHPublicKey),
+		RootPassword:             server.SudoPassword,
 		PublicIPPollAttempts:     30,
 		PublicIPPollIntervalSecs: 5,
 	})

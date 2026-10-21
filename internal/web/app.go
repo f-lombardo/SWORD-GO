@@ -20,6 +20,7 @@ import (
 	"sword-go/internal/cloud"
 	"sword-go/internal/cloud/digitalocean"
 	"sword-go/internal/cloud/hetzner"
+	"sword-go/internal/cloud/hostinger"
 
 	_ "modernc.org/sqlite"
 )
@@ -83,6 +84,7 @@ func NewApp() (*App, error) {
 	service := servers.NewService(store, map[string]cloud.ServerProvider{
 		"digital_ocean": digitalocean.NewProvider(httpClient),
 		"hetzner":       hetzner.NewProvider(httpClient),
+		"hostinger":     hostinger.NewProvider(httpClient),
 	})
 	ipAddress := cmpOr(os.Getenv("SWORD_GO_HTTP_IP_ADDRESS"), "0.0.0.0")
 	port := cmpOr(os.Getenv("SWORD_GO_HTTP_PORT"), "8088")

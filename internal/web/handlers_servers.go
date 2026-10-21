@@ -13,6 +13,7 @@ import (
 	"sword-go/internal/app/servers"
 	"sword-go/internal/cloud/digitalocean"
 	"sword-go/internal/cloud/hetzner"
+	"sword-go/internal/cloud/hostinger"
 )
 
 type serverOption struct {
@@ -101,6 +102,28 @@ func (a *App) serverOptionsHandler(w http.ResponseWriter, r *http.Request) {
 					} else {
 						images = append(images, serverOption{Value: fmt.Sprintf("%d", item.ID)})
 					}
+				}
+			}
+		case "hostinger":
+			provider := hostinger.NewProvider(http.DefaultClient)
+			dataCenters, err := provider.ListDataCenters(r.Context(), apiKey)
+			if err == nil {
+				for _, item := range dataCenters {
+					regions = append(regions, serverOption{Value: strconv.Itoa(item.ID), Label: fmt.Sprintf("%s, %s (%s)", item.City, item.Continent, item.Name)})
+				}
+			}
+			catalog, err := provider.ListVPSCatalog(r.Context(), apiKey)
+			if err == nil {
+				for _, item := range catalog {
+					for _, price := range item.Prices {
+						serverTypes = append(serverTypes, serverOption{Value: price.ID, Label: fmt.Sprintf("%s — %s %d.%02d / %d %s", item.Name, price.Currency, price.Price/100, price.Price%100, price.Period, price.PeriodUnit)})
+					}
+				}
+			}
+			templates, err := provider.ListTemplates(r.Context(), apiKey)
+			if err == nil {
+				for _, item := range templates {
+					images = append(images, serverOption{Value: strconv.Itoa(item.ID), Label: cmpOr(item.Description, item.Name)})
 				}
 			}
 		}
